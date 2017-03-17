@@ -1,0 +1,65 @@
+{
+	"intents":[
+		{
+			"intent": "GetNextTransitToWork",
+			"slots": [
+				{
+					"name":"transit",
+					"type": "TRANSIT_TYPE"
+				}
+			]
+		},
+		{
+			"intent": "PutPostalAddress",
+			"slots": [
+				{
+					"name":"address",
+					"type": "AMAZON.PostalAddress"
+				}
+			]
+		},
+		{
+			"intent": "UpdateHomeAddress"
+		},
+		{
+			"intent": "UpdateWorkAddress"
+		},
+		{
+			"intent": "YesIntent"
+		},
+		{
+			"intent": "NoIntent"
+		},
+		{
+			"intent": "GetArrivalTime"
+		},
+		{
+			"intent": "GetTotalTransitDuration"
+		},
+		{
+			"intent": "GetDirections"
+		},
+		{
+			"intent": "GetHomeAddress"
+		},
+		{
+			"intent": "GetWorkAddress"
+		},
+		{
+			"intent": "AMAZON.PreviousIntent"
+		},
+		{
+			"intent": "AMAZON.NextIntent"
+		},
+		{
+			"intent": "AMAZON.RepeatIntent"
+		},
+		{
+			"intent": "AMAZON.StopIntent"
+		},
+		{
+			"intent": "AMAZON.CancelIntent"
+		}
+	]
+}
+

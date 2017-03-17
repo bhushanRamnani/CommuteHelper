@@ -1,0 +1,135 @@
+GetNextTransitToWork when's the next {transit} to work
+GetNextTransitToWork when is the next {transit} to work
+GetNextTransitToWork when is my next {transit} to work
+GetNextTransitToWork next {transit} to work
+GetNextTransitToWork {transit} to work
+GetNextTransitToWork what time is my next {transit} to work
+GetNextTransitToWork next {transit} to work
+GetNextTransitToWork when's the next {transit}
+GetNextTransitToWork when is the next {transit}
+GetNextTransitToWork next {transit}
+GetNextTransitToWork what time is my next {transit}
+GetNextTransitToWork next {transit}
+GetNextTransitToWork when is my next {transit}
+
+YesIntent Yes
+YesIntent Yea
+YesIntent Yup
+YesIntent Yes please
+YesIntent Sure
+YesIntent Affirmative
+YesIntent True
+YesIntent Absolutely
+YesIntent That is correct
+YesIntent Yes that is correct
+YesIntent correct
+
+NoIntent No
+NoIntent Nope
+NoIntent Na
+NoIntent Negative
+NoIntent False
+NoIntent Not at all
+NoIntent Incorrect
+
+GetArrivalTime when will I reach
+GetArrivalTime what time will I reach
+GetArrivalTime at what time will I reach
+GetArrivalTime what time will I reach at
+GetArrivalTime when will I arrive
+GetArrivalTime what time will I arrive
+GetArrivalTime at what time will I arrive
+GetArrivalTime what time will I arrive at
+GetArrivalTime what is my arrival time
+GetArrivalTime what is the arrival time
+GetArrivalTime what is my ETA
+GetArrivalTime arrival time
+
+GetTotalTransitDuration how much time will it take
+GetTotalTransitDuration how long will it take
+GetTotalTransitDuration what is the transit duration
+GetTotalTransitDuration what is my transit duration
+GetTotalTransitDuration how long is the ride
+GetTotalTransitDuration how long is the journey
+GetTotalTransitDuration what is the duration
+
+GetDirections give me directions
+GetDirections please give me directions
+GetDirections get directions
+GetDirections Can I get directions
+GetDirections Can I have directions
+GetDirections directions
+
+GetHomeAddress give me my home address
+GetHomeAddress tell me my home address
+GetHomeAddress what's my home address
+GetHomeAddress what is my home address
+GetHomeAddress can I have my home address
+GetHomeAddress can I have my home address please
+GetHomeAddress get home address
+GetHomeAddress get my home address
+GetHomeAddress get home address
+
+GetWorkAddress give me my work address
+GetWorkAddress tell me my work address
+GetWorkAddress what's my work address
+GetWorkAddress what is my work address
+GetWorkAddress can I have my work address
+GetWorkAddress can I have my work address please
+GetWorkAddress get work address
+GetWorkAddress get my work address
+GetWorkAddress get work address
+
+PutPostalAddress my address is {address}
+PutPostalAddress address is {address}
+PutPostalAddress address {address}
+PutPostalAddress work address {address}
+PutPostalAddress home address {address}
+PutPostalAddress my work address is {address}
+PutPostalAddress my home address is {address}
+PutPostalAddress office address {address}
+PutPostalAddress school address address {address}
+PutPostalAddress {address}
+
+UpdateHomeAddress change my home address
+UpdateHomeAddress update my home address
+UpdateHomeAddress alter my home address
+UpdateHomeAddress update home address
+UpdateHomeAddress change home address
+UpdateHomeAddress alter home address
+
+UpdateWorkAddress change my work address
+UpdateWorkAddress update my work address
+UpdateWorkAddress alter my work address
+UpdateWorkAddress update work address
+UpdateWorkAddress change work address
+UpdateWorkAddress alter work address
+
+AMAZON.RepeatIntent repeat
+AMAZON.RepeatIntent repeat option
+AMAZON.RepeatIntent repeat transit option
+AMAZON.RepeatIntent repeat suggestion
+AMAZON.RepeatIntent repeat transit suggestion
+AMAZON.RepeatIntent can you please repeat that
+AMAZON.RepeatIntent come again
+AMAZON.RepeatIntent again
+AMAZON.RepeatIntent can you repeat that
+
+AMAZON.NextIntent next option
+AMAZON.NextIntent next suggestion
+AMAZON.NextIntent next transit
+AMAZON.NextIntent more options
+
+AMAZON.PreviousIntent previous option
+AMAZON.PreviousIntent previous suggestion
+AMAZON.PreviousIntent previous transit
+AMAZON.PreviousIntent last option
+AMAZON.PreviousIntent last suggestion
+
+AMAZON.StopIntent Bye
+AMAZON.StopIntent Thank you
+AMAZON.StopIntent Thanks
+AMAZON.StopIntent Thanks Bye
+AMAZON.StopIntent Thank you. Bye
+AMAZON.StopIntent Cya
+
