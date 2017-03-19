@@ -5,7 +5,7 @@
 
     <bean id="googleMapsService"
           class="com.ramnani.alexaskills.CommuteHelper.GoogleMapsService">
-        <constructor-arg index="0" value="AIzaSyD2vQybmjrsVz-JuV3rNc8cz0cIplJWZIM" />
+        <constructor-arg index="0" value="" />
     </bean>
 
     <bean id="transitHelperDao"

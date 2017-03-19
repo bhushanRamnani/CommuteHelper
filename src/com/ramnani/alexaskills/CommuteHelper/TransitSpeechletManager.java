@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016-2017 Bhushan Ramnani (b.ramnani@gmail.com),
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.ramnani.alexaskills.CommuteHelper;
 
 import com.amazon.speech.slu.Intent;
@@ -21,9 +36,12 @@ import org.joda.time.format.DateTimeFormatter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+
 
 /**
- * Created by ramnanib on 1/11/17.
+ * This speechlet manager is responsible for speech responses to user
+ * questions related to transit suggestions.
  */
 public class TransitSpeechletManager {
     private static final Logger log = Logger.getLogger(TransitSpeechletManager.class);
@@ -45,10 +63,13 @@ public class TransitSpeechletManager {
     private static final String ERROR_STRING = "Sorry. I'm having some issues " +
             "giving you an answer right now.";
 
-    private static final String REPROMPT_STRING = "You can ask me for more information on this route" +
-            " or alternate routes. ";
-
-    private static Reprompt STANDARD_REPROMPT;
+    private static final String[] REPROMPT_RESPONSES = {
+            "If you wish to know the arrival time, you can ask me, what is the arrival time.",
+            "If you wish to get the travel duration, you can ask me, \"how long will it take.\"",
+            "If you'd like to get directions, you can ask me, \"can I get directions.\"",
+            "If you'd like to get information on alternate routes, you can say, \"Next Option.\"",
+            "If you'd like me to repeat this information, you can say, \"Repeat.\""
+    };
 
     private static final String TIME_FORMAT = "hh:mm a";
 
@@ -58,12 +79,7 @@ public class TransitSpeechletManager {
 
     public TransitSpeechletManager(GoogleMapsService googleMapsService) {
         Validate.notNull(googleMapsService);
-
         this.googleMapsService = googleMapsService;
-        PlainTextOutputSpeech repromptSpeech = new PlainTextOutputSpeech();
-        repromptSpeech.setText(REPROMPT_STRING);
-        STANDARD_REPROMPT = new Reprompt();
-        STANDARD_REPROMPT.setOutputSpeech(repromptSpeech);
     }
 
     public SpeechletResponse handleNextTransitRequest(Intent intent,
@@ -124,7 +140,7 @@ public class TransitSpeechletManager {
         card.setTitle("Arrival Time");
         card.setContent(output);
         session.setAttribute(PREVIOUS_RESPONSE_ATTRIBUTE, output);
-        return SpeechletResponse.newAskResponse(outputSpeech, STANDARD_REPROMPT, card);
+        return SpeechletResponse.newAskResponse(outputSpeech, getRandomReprompt(), card);
     }
 
     public SpeechletResponse handleGetTotalTransitDurationRequest(Session session) throws IOException {
@@ -147,7 +163,7 @@ public class TransitSpeechletManager {
         card.setTitle("Transit Duration");
         card.setContent(output);
         session.setAttribute(PREVIOUS_RESPONSE_ATTRIBUTE, output);
-        return SpeechletResponse.newAskResponse(outputSpeech, STANDARD_REPROMPT, card);
+        return SpeechletResponse.newAskResponse(outputSpeech, getRandomReprompt(), card);
     }
 
     public SpeechletResponse handleGetDirectionsRequest(Session session) throws IOException {
@@ -175,7 +191,7 @@ public class TransitSpeechletManager {
         card.setTitle("Transit Directions");
         card.setContent(directions.toString());
         session.setAttribute(PREVIOUS_RESPONSE_ATTRIBUTE, directions.toString());
-        return SpeechletResponse.newAskResponse(outputSpeech, STANDARD_REPROMPT, card);
+        return SpeechletResponse.newAskResponse(outputSpeech, getRandomReprompt(), card);
     }
 
     public SpeechletResponse handleRepeatSuggestionRequest(Session session)
@@ -189,7 +205,7 @@ public class TransitSpeechletManager {
         speech.setText(previousResponse);
         SimpleCard card = new SimpleCard();
         card.setContent(previousResponse);
-        return SpeechletResponse.newAskResponse(speech, STANDARD_REPROMPT, card);
+        return SpeechletResponse.newAskResponse(speech, getRandomReprompt(), card);
     }
 
     public SpeechletResponse handleNextSuggestionRequest(Session session)
@@ -289,7 +305,7 @@ public class TransitSpeechletManager {
         card.setTitle("Transit Suggestion");
         card.setContent(outputSpeechBuilder.toString());
         session.setAttribute(PREVIOUS_RESPONSE_ATTRIBUTE, outputSpeechBuilder.toString());
-        return SpeechletResponse.newAskResponse(outputSpeech, STANDARD_REPROMPT, card);
+        return SpeechletResponse.newAskResponse(outputSpeech, getRandomReprompt(), card);
     }
 
     private SpeechletResponse getNoMoreTransitOptionsResposne() {
@@ -299,7 +315,7 @@ public class TransitSpeechletManager {
         SimpleCard card = new SimpleCard();
         card.setTitle("Transit Suggestion");
         card.setContent(output);
-        return SpeechletResponse.newAskResponse(outputSpeech, STANDARD_REPROMPT, card);
+        return SpeechletResponse.newAskResponse(outputSpeech, getRandomReprompt(), card);
     }
 
     private TransitSuggestion getCurrentTransitSuggestion(Session session) throws IOException {
@@ -331,5 +347,16 @@ public class TransitSpeechletManager {
         session.setAttribute(INDEX_ATTRIBUTE, idx);
         TransitSuggestion suggestion = suggestions.get(idx);
         return suggestion;
+    }
+
+    private Reprompt getRandomReprompt() {
+        Reprompt reprompt = new Reprompt();
+        Random random = new Random();
+        int index = random.nextInt(REPROMPT_RESPONSES.length);
+        String repromptText = REPROMPT_RESPONSES[index];
+        PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+        speech.setText(repromptText);
+        reprompt.setOutputSpeech(speech);
+        return reprompt;
     }
 }

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016-2017 Bhushan Ramnani (b.ramnani@gmail.com),
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package Storage;
 
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitHelperDao;
@@ -19,7 +34,7 @@ import java.util.Map;
 @ContextConfiguration("/test-config.xml")
 public class TransitHelperDaoTest {
 
-    private String myUserId = "amzn1.ask.account.AHHQSBLXNBOD2UICYL6N2DHPXTRXS7MGM7CQHS7GHQ44OPKK2PIXTSIJIQD42S6ILT5ZZ3TT22QPLF4JWSRC637JHUSRRXG7ELVZLFUSCJ2GIH2ADPZSLOOKQLJNQQ7DW3BW3KILKQCLYRLV7NRNHKDI3EHI5PKG546KQKHIMYHNU53MTQSVDQ5HWPUKGNR2SOKARINIYCM375Q";
+    private String myUserId = "userId";
 
     @Autowired
     private TransitHelperDao transitHelperDao;
@@ -40,10 +55,10 @@ public class TransitHelperDaoTest {
     @Test
     public void addNewUser_withTwoDestinations() {
         String userId1 = "User2";
-        String address1 = "2400 Boyer Ave E, Seattle, WA 98112";
+        String address1 = "2401 Tozer Ave E, Seattle, WA 99122";
         Map<String, String> destinations = new HashMap<>();
         destinations.put("Sam's place", "1919 55th Ave, Seattle, WA - 98223");
-        destinations.put("work", "1918 8th Ave, Seattle, WA 98101");
+        destinations.put("work", "2020 66th Ave NE, Seattle, WA 98101");
         TransitUser user = transitHelperDao.upsertUser(userId1, address1, destinations);
         Assert.assertEquals(userId1, user.getUserId());
         Assert.assertEquals(address1, user.getHomeAddress());

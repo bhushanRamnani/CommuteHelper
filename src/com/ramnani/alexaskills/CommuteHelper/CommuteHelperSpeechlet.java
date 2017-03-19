@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016-2017 Bhushan Ramnani (b.ramnani@gmail.com),
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.ramnani.alexaskills.CommuteHelper;
 
 import com.amazon.speech.slu.Intent;
@@ -31,7 +46,9 @@ public class CommuteHelperSpeechlet implements Speechlet {
 
     private UserSetupSpeechletManager userSetupSpeechletManager;
 
-    public CommuteHelperSpeechlet(GoogleMapsService googleMapsService, TransitHelperDao transitHelperDao) {
+
+    public CommuteHelperSpeechlet(GoogleMapsService googleMapsService,
+                                  TransitHelperDao transitHelperDao) {
         Validate.notNull(googleMapsService);
 
         transitSpeechletManager = new TransitSpeechletManager(googleMapsService);
@@ -103,6 +120,8 @@ public class CommuteHelperSpeechlet implements Speechlet {
                 return transitSpeechletManager.handleNextSuggestionRequest(session);
             } else if ("AMAZON.PreviousIntent".equals(intentName)) {
                 return transitSpeechletManager.handlePreviousSuggestionRequest(session);
+            } else if ("AMAZON.HelpIntent".equals(intentName)) {
+                return handleHelpRequest();
             } else {
                 throw new IllegalArgumentException("Unrecognized intent: " + intent.getName());
             }
@@ -137,6 +156,24 @@ public class CommuteHelperSpeechlet implements Speechlet {
         speech.setText(speechText);
 
         // Create reprompt
+        Reprompt reprompt = new Reprompt();
+        reprompt.setOutputSpeech(speech);
+
+        return SpeechletResponse.newAskResponse(speech, reprompt, card);
+    }
+
+    private SpeechletResponse handleHelpRequest() {
+        String speechText = "In order to get transit information from your home to work," +
+                " you can ask me, \"when's the next bus to work\", or, \"when's the next transit" +
+                " to work.\". After that, I can help you with more information, like arrival time," +
+                " duration of travel, and directions.";
+
+        SimpleCard card = new SimpleCard();
+        card.setTitle("Usage");
+
+        PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+        speech.setText(speechText);
+
         Reprompt reprompt = new Reprompt();
         reprompt.setOutputSpeech(speech);
 

@@ -133,3 +133,9 @@ AMAZON.StopIntent Thanks Bye
 AMAZON.StopIntent Thank you. Bye
 AMAZON.StopIntent Cya
 
+AMAZON.HelpIntent help me with my bus times
+AMAZON.HelpIntent help me with transit
+AMAZON.HelpIntent please help me with transit
+AMAZON.HelpIntent how do I ask for transit suggestions
+AMAZON.HelpIntent help me with transit suggestions
+AMAZON.HelpIntent help me with transit information
