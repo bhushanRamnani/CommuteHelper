@@ -74,8 +74,8 @@ public class UserSetupSpeechletManager {
             log.info("Prompting user to setup home address.");
             session.setAttribute(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS);
             String homeAddressMessage = "In order to give you transit information, " +
-                    "I first need your home address. For example, you can say, my home address " +
-                    "is, Fifteen Zero Nine Blakeley Street, Seattle, Washington.";
+                    "I first need your home address, with zip code. For example, you can say, my home address " +
+                    "is, Fifteen Zero Nine Blakeley Street, Seattle, Washington, Nine Eight Three Three Zero.";
             String cardTitle = "Home Address";
             return getNewAskResponse(homeAddressMessage, cardTitle);
         }
@@ -89,7 +89,7 @@ public class UserSetupSpeechletManager {
         session.setAttribute(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS);
 
         return getNewAskResponse("Ok. If  you'd like to change your home address, tell me your" +
-                " new home address with zip code. For Example, you can say, my home address is" +
+                " new home address, with zip code. For Example, you can say, my home address is" +
                 " ,Nineteen Twenty Twenty Fourth, San Francisco, California, Nine Four Zero Four Four.",
                 "Change Home Address");
     }
@@ -100,7 +100,7 @@ public class UserSetupSpeechletManager {
         session.setAttribute(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS);
 
         return getNewAskResponse("Ok. If  you'd like to change your work address, tell me your" +
-                        " new work address with zip code. For Example, you can say, my work address is" +
+                        " new work address, with zip code. For Example, you can say, my work address is" +
                         " ,Nineteen Twenty Sixteenth Avenue, San Francisco, California, Nine Four Zero Four Three.",
                 "Change Work Address");
     }
@@ -246,9 +246,9 @@ public class UserSetupSpeechletManager {
                 setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS))
         {
             session.setAttribute(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS);
-            return getNewAskResponse("Ok. Now tell me your work address with zip code. For example, you can say" +
+            return getNewAskResponse("Ok. Now tell me your work address, with zip code. For example, you can say" +
                     ", my work address is Twenty Four Hundred Martin Street, Seattle, Washington," +
-                            "Nine Eight One One Four",
+                            " Nine Eight One One Four",
                     "Work Address");
         }
         else if (intentName.equals(NO_INTENT) &&
@@ -289,11 +289,12 @@ public class UserSetupSpeechletManager {
         TransitUser user = null;
 
         try {
+            log.info("Attempting to insert user: " + userId);
             user = userStore.upsertUser(userId, homeAddress, destinations);
             log.info("Inserted user: " + user);
         } catch (Exception ex) {
             log.error("Could not insert user into the TransitUsers table.", ex);
-            getNewAskResponse("Sorry. I'm having some issues entering your details. Please try again. ",
+            return getNewAskResponse("Sorry. I'm having some issues entering your details. Please try again. ",
                     "Try again. ");
 
         }

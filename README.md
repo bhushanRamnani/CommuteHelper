@@ -27,5 +27,7 @@ During this setup process, s/he needs to provide her/his home address and work a
 This input is taken using a conversational speech model and verified against google maps database, in order
 to make the setup process smooth and accurate.
 
+All user address information is encrypted ar rest using client side encryption and AWS Key Management Service
+
 Transit types include bus, rail, train, metro, subway, tram, monorail, heavy rail, commuter train
 , high speed train, bus, intercity bus, trolley bus, share taxi, ferry, cable car, cable, gondola, funicular

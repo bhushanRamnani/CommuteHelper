@@ -16,23 +16,35 @@
 package com.ramnani.alexaskills.CommuteHelper.Storage;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.datamodeling.AttributeEncryptor;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
+import com.amazonaws.services.dynamodbv2.datamodeling.encryption.providers.DirectKmsMaterialProvider;
+import com.amazonaws.services.kms.AWSKMS;
+import com.amazonaws.services.kms.AWSKMSClient;
 import org.apache.commons.lang3.Validate;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Data Access Object layer for The TransitUsers DynamoDB table
+ * Data Access Object layer for The TransitUsers DynamoDB table. All user data
+ * except the UserId is encrypted using a symmetric key procured from AWS
+ * KMS (Key Management Service)
  */
 public class TransitHelperDao {
 
     AmazonDynamoDBClient dynamoDBClient;
     DynamoDBMapper mapper;
+    AWSKMS kms;
+    DirectKmsMaterialProvider kmsMaterialProvider;
 
-    public TransitHelperDao() {
+    public TransitHelperDao(String kmsKeyId) {
         dynamoDBClient = new AmazonDynamoDBClient();
-        mapper = new DynamoDBMapper(dynamoDBClient);
+        kms = new AWSKMSClient();
+        kmsMaterialProvider = new DirectKmsMaterialProvider(kms, kmsKeyId);
+        mapper = new DynamoDBMapper(dynamoDBClient, DynamoDBMapperConfig.DEFAULT,
+                new AttributeEncryptor(kmsMaterialProvider));
     }
 
     /**

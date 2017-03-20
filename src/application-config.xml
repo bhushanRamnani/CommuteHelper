@@ -10,5 +10,6 @@
 
     <bean id="transitHelperDao"
           class="com.ramnani.alexaskills.CommuteHelper.Storage.TransitHelperDao">
+        <constructor-arg name="kmsKeyId" value="" />
     </bean>
 </beans>
