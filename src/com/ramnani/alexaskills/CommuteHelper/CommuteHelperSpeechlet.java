@@ -32,6 +32,9 @@ import com.ramnani.alexaskills.CommuteHelper.Storage.TransitUser;
 import org.apache.commons.lang3.Validate;
 import org.apache.log4j.Logger;
 
+import java.io.IOException;
+import java.util.Map;
+
 
 public class CommuteHelperSpeechlet implements Speechlet {
 
@@ -97,29 +100,30 @@ public class CommuteHelperSpeechlet implements Speechlet {
             if ("GetNextTransitToWork".equals(intentName)) {
                 return transitSpeechletManager.handleNextTransitRequest(intent, session, transitUser);
             } else if ("GetArrivalTime".equals(intentName)) {
-                return transitSpeechletManager.handleGetArrivalTimeRequest(intentRequest, session);
+                return transitSpeechletManager.handleGetArrivalTimeRequest(intentRequest, session, intent);
             } else if ("GetTotalTransitDuration".equals(intentName)) {
-                return transitSpeechletManager.handleGetTotalTransitDurationRequest(session);
+                return transitSpeechletManager.handleGetTotalTransitDurationRequest(session, intent);
             } else if ("GetDirections".equals(intentName)) {
-                return transitSpeechletManager.handleGetDirectionsRequest(session);
+                return transitSpeechletManager.handleGetDirectionsRequest(session, intent);
             } else if ("UpdateHomeAddress".equals(intentName)) {
                 return userSetupSpeechletManager.handleUpdateHomeAddressRequest(session);
             } else if ("UpdateWorkAddress".equals(intentName)) {
                 return userSetupSpeechletManager.handleUpdateWorkAddressRequest(session);
             } else if ("PutPostalAddress".equals(intentName)) {
                 return userSetupSpeechletManager.handleUpdatePostalAddressRequest(session, intent);
-            } else if ("YesIntent".equals(intentName) || "NoIntent".equals(intentName)) {
-                return userSetupSpeechletManager.handleVerifyPostalAddressRequest(session, intent);
             } else if ("GetWorkAddress".equals(intentName)) {
                 return userSetupSpeechletManager.handleGetWorkAddressRequest(user);
             } else if ("GetHomeAddress".equals(intentName)) {
                 return userSetupSpeechletManager.handleGetHomeAddressRequest(user);
             } else if ("AMAZON.RepeatIntent".equals(intentName)) {
-                return transitSpeechletManager.handleRepeatSuggestionRequest(session);
+                return transitSpeechletManager.handleRepeatSuggestionRequest(session, intent);
             } else if ("AMAZON.NextIntent".equals(intentName)) {
-                return transitSpeechletManager.handleNextSuggestionRequest(session);
+                return transitSpeechletManager.handleNextSuggestionRequest(session, intent);
             } else if ("AMAZON.PreviousIntent".equals(intentName)) {
-                return transitSpeechletManager.handlePreviousSuggestionRequest(session);
+                return transitSpeechletManager.handlePreviousSuggestionRequest(session, intent);
+            } else if ("YesIntent".equals(intentName)
+                     || "NoIntent".equals(intentName)) {
+                return handleYesNoRequest(session, intent, intentRequest);
             } else if ("AMAZON.HelpIntent".equals(intentName)) {
                 return handleHelpRequest();
             } else {
@@ -127,7 +131,7 @@ public class CommuteHelperSpeechlet implements Speechlet {
             }
         } catch (Exception ex) {
             log.error("Internal Server error handling the intent.", ex);
-            return transitSpeechletManager.getTryAgainResponse(ERROR_STRING);
+            return getInternalServerErrorResponse();
         }
     }
 
@@ -142,13 +146,14 @@ public class CommuteHelperSpeechlet implements Speechlet {
      * @return SpeechletResponse spoken and visual response for the given intent
      */
     private SpeechletResponse getWelcomeResponse() {
-        String speechText = "Hi! I'm Transit Companion. " +
-                "I'll be glad to help you with transit information." +
-                "For example, ask me when's your next bus.";
+        String speechText = "Hi! I'm Transit Helper. " +
+                "I'll be glad to help you with transit information from" +
+                " home to work. For example, you can ask me, " +
+                "\"when's the next bus to work\".";
 
         // Create the Simple card content.
         SimpleCard card = new SimpleCard();
-        card.setTitle("Transit Companion");
+        card.setTitle("Transit Helper");
         card.setContent(speechText);
 
         // Create the plain text output.
@@ -160,6 +165,26 @@ public class CommuteHelperSpeechlet implements Speechlet {
         reprompt.setOutputSpeech(speech);
 
         return SpeechletResponse.newAskResponse(speech, reprompt, card);
+    }
+
+    private SpeechletResponse handleYesNoRequest(Session session,
+                                                 Intent intent,
+                                                 IntentRequest request)
+            throws IOException {
+        Map<String, Object> sessionAttributes = session.getAttributes();
+
+        if (sessionAttributes.containsKey(TransitSpeechletManager.SUGGESTION_ATTRIBUTE)) {
+            // User is in a Transit Suggestion related session
+            log.info("Handling suggestion.");
+            return transitSpeechletManager
+                    .handleYesNoIntentResponse(session, intent, request);
+        } else if (sessionAttributes.containsKey(UserSetupSpeechletManager.SETUP_ATTRIBUTE)) {
+            // User is in a Setup session
+            log.info("Handling address setup");
+            return userSetupSpeechletManager
+                    .handleVerifyPostalAddressRequest(session, intent);
+        }
+        return getInternalServerErrorResponse();
     }
 
     private SpeechletResponse handleHelpRequest() {
@@ -178,6 +203,14 @@ public class CommuteHelperSpeechlet implements Speechlet {
         reprompt.setOutputSpeech(speech);
 
         return SpeechletResponse.newAskResponse(speech, reprompt, card);
+    }
+
+    private SpeechletResponse getInternalServerErrorResponse() {
+        PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+        speech.setText(ERROR_STRING);
+        SimpleCard card = new SimpleCard();
+        card.setContent(ERROR_STRING);
+        return SpeechletResponse.newTellResponse(speech, card);
     }
 
     private SpeechletResponse handleExitIntentResponse() {

@@ -25,6 +25,7 @@ import com.amazon.speech.ui.Reprompt;
 import com.amazon.speech.ui.SimpleCard;
 import com.google.maps.model.Duration;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitUser;
+import com.ramnani.alexaskills.CommuteHelper.utils.SpeechletUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -34,6 +35,8 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -50,7 +53,9 @@ public class TransitSpeechletManager {
 
     private static final String SLOT_TRANSIT = "transit";
 
-    private static final String SUGGESTION_ATTRIBUTE = "suggestion";
+    public static final String SUGGESTION_ATTRIBUTE = "suggestion";
+
+    private static final String REPROMPT_INTENT_ATTRIBUTE = "repromptIntent";
 
     private static final String INDEX_ATTRIBUTE = "index";
 
@@ -63,13 +68,7 @@ public class TransitSpeechletManager {
     private static final String ERROR_STRING = "Sorry. I'm having some issues " +
             "giving you an answer right now.";
 
-    private static final String[] REPROMPT_RESPONSES = {
-            "If you wish to know the arrival time, you can ask me, what is the arrival time.",
-            "If you wish to get the travel duration, you can ask me, \"how long will it take.\"",
-            "If you'd like to get directions, you can ask me, \"can I get directions.\"",
-            "If you'd like to get information on alternate routes, you can say, \"Next Option.\"",
-            "If you'd like me to repeat this information, you can say, \"Repeat.\""
-    };
+    private static Map<String, String> REPROMPT_QUESTIONS;
 
     private static final String TIME_FORMAT = "hh:mm a";
 
@@ -80,6 +79,20 @@ public class TransitSpeechletManager {
     public TransitSpeechletManager(GoogleMapsService googleMapsService) {
         Validate.notNull(googleMapsService);
         this.googleMapsService = googleMapsService;
+
+        REPROMPT_QUESTIONS = new HashMap<>();
+        REPROMPT_QUESTIONS.put("GetArrivalTime",
+                               " Would you like to know the arrival time?");
+        REPROMPT_QUESTIONS.put("GetTotalTransitDuration",
+                               " Would you like to know how long it will take to reach your destination?");
+        REPROMPT_QUESTIONS.put("GetDirections",
+                               " Would you like to get directions to your transit stop?");
+        REPROMPT_QUESTIONS.put("AMAZON.NextIntent",
+                               " Would you like to hear the next option?");
+        REPROMPT_QUESTIONS.put("AMAZON.PreviousIntent",
+                               " Would you like to hear the previous option?");
+        REPROMPT_QUESTIONS.put("AMAZON.RepeatIntent",
+                               " Would you like me to repeat this option?");
     }
 
     public SpeechletResponse handleNextTransitRequest(Intent intent,
@@ -114,13 +127,16 @@ public class TransitSpeechletManager {
         }
         TransitSuggestion suggestion = suggestions.get(0);
         SpeechletResponse response = suggestionToDetailedResponse(suggestion, session,
-                "Your next " + transitType + " is ");
+                "Your next " + transitType + " is ", intent);
         session.setAttribute(SUGGESTION_ATTRIBUTE, mapper.writeValueAsString(suggestions));
         session.setAttribute(INDEX_ATTRIBUTE, 0);
         return response;
     }
 
-    public SpeechletResponse handleGetArrivalTimeRequest(IntentRequest request, Session session) throws IOException {
+    public SpeechletResponse handleGetArrivalTimeRequest(IntentRequest request,
+                                                         Session session,
+                                                         Intent intent)
+            throws IOException {
         TransitSuggestion suggestion = getCurrentTransitSuggestion(session);
 
         if (suggestion == null) {
@@ -133,17 +149,21 @@ public class TransitSpeechletManager {
         String output = "You will arrive at " + suggestion.getArrivalTime()
                 .withZone(DateTimeZone.forID("America/Los_Angeles"))
                 .toString(formatter);
-
+        output = output.concat(".");
+        String repromptQuestion = generateRepromptQuestion(intent, session);
+        String finalOutput = output.concat(repromptQuestion);
         PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
-        outputSpeech.setText(output);
+        outputSpeech.setText(finalOutput);
         SimpleCard card = new SimpleCard();
         card.setTitle("Arrival Time");
         card.setContent(output);
         session.setAttribute(PREVIOUS_RESPONSE_ATTRIBUTE, output);
-        return SpeechletResponse.newAskResponse(outputSpeech, getRandomReprompt(), card);
+        return SpeechletResponse.newAskResponse(outputSpeech,
+                SpeechletUtils.getReprompt(repromptQuestion), card);
     }
 
-    public SpeechletResponse handleGetTotalTransitDurationRequest(Session session) throws IOException {
+    public SpeechletResponse handleGetTotalTransitDurationRequest(Session session,
+                                                                  Intent intent) throws IOException {
         TransitSuggestion suggestion = getCurrentTransitSuggestion(session);
 
         if (suggestion == null) {
@@ -154,19 +174,24 @@ public class TransitSpeechletManager {
         if (totalDuration == null || totalDuration.humanReadable == null) {
             return getTryAgainResponse(ERROR_STRING);
         }
-
+        log.info("Getting reprompt question.");
+        String repromptQuestion = generateRepromptQuestion(intent, session);
+        log.info("Obtained reprompt question: " + repromptQuestion);
+        Reprompt reprompt = SpeechletUtils.getReprompt(repromptQuestion);
         String output = "It will take you " + totalDuration.humanReadable
-                + " to arrive at your destination.";
+                + " to arrive at your destination. ";
+        String finalOutput = output + repromptQuestion;
         PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
-        outputSpeech.setText(output);
+        outputSpeech.setText(finalOutput);
         SimpleCard card = new SimpleCard();
         card.setTitle("Transit Duration");
         card.setContent(output);
         session.setAttribute(PREVIOUS_RESPONSE_ATTRIBUTE, output);
-        return SpeechletResponse.newAskResponse(outputSpeech, getRandomReprompt(), card);
+        return SpeechletResponse.newAskResponse(outputSpeech, reprompt, card);
     }
 
-    public SpeechletResponse handleGetDirectionsRequest(Session session) throws IOException {
+    public SpeechletResponse handleGetDirectionsRequest(Session session,
+                                                        Intent intent) throws IOException {
         TransitSuggestion suggestion = getCurrentTransitSuggestion(session);
 
         if (suggestion == null) {
@@ -185,30 +210,41 @@ public class TransitSpeechletManager {
             return getTryAgainResponse(ERROR_STRING);
         }
         directions.append(transitInstructions);
+        directions.append(".");
+        String directionsOutput = directions.toString();
+
+        String repromptQuestion = generateRepromptQuestion(intent, session);
+        Reprompt reprompt = SpeechletUtils.getReprompt(repromptQuestion);
+
+        directions.append(repromptQuestion);
         PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
         outputSpeech.setText(directions.toString());
         SimpleCard card = new SimpleCard();
         card.setTitle("Transit Directions");
-        card.setContent(directions.toString());
-        session.setAttribute(PREVIOUS_RESPONSE_ATTRIBUTE, directions.toString());
-        return SpeechletResponse.newAskResponse(outputSpeech, getRandomReprompt(), card);
+        card.setContent(directionsOutput);
+        session.setAttribute(PREVIOUS_RESPONSE_ATTRIBUTE, directionsOutput);
+        return SpeechletResponse.newAskResponse(outputSpeech, reprompt, card);
     }
 
-    public SpeechletResponse handleRepeatSuggestionRequest(Session session)
+    public SpeechletResponse handleRepeatSuggestionRequest(Session session, Intent intent)
             throws IOException {
         String previousResponse = (String) session.getAttribute(PREVIOUS_RESPONSE_ATTRIBUTE);
 
         if (previousResponse == null) {
             return getTryAgainResponse(HELP_STRING);
         }
+        String repromptQuestion = generateRepromptQuestion(intent, session);
+        Reprompt reprompt = SpeechletUtils.getReprompt(repromptQuestion);
+        String finalResponse = previousResponse.concat(repromptQuestion);
+
         PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
-        speech.setText(previousResponse);
+        speech.setText(finalResponse);
         SimpleCard card = new SimpleCard();
         card.setContent(previousResponse);
-        return SpeechletResponse.newAskResponse(speech, getRandomReprompt(), card);
+        return SpeechletResponse.newAskResponse(speech, reprompt, card);
     }
 
-    public SpeechletResponse handleNextSuggestionRequest(Session session)
+    public SpeechletResponse handleNextSuggestionRequest(Session session, Intent intent)
             throws IOException {
         TransitSuggestion suggestion;
 
@@ -217,10 +253,10 @@ public class TransitSpeechletManager {
         } catch (IndexOutOfBoundsException ex) {
             return getNoMoreTransitOptionsResposne();
         }
-        return suggestionToDetailedResponse(suggestion, session, "Your next option is ");
+        return suggestionToDetailedResponse(suggestion, session, "Your next option is ", intent);
     }
 
-    public SpeechletResponse handlePreviousSuggestionRequest(Session session)
+    public SpeechletResponse handlePreviousSuggestionRequest(Session session, Intent intent)
             throws IOException {
         TransitSuggestion suggestion;
 
@@ -229,7 +265,8 @@ public class TransitSpeechletManager {
         } catch (IndexOutOfBoundsException ex) {
             return getNoMoreTransitOptionsResposne();
         }
-        return suggestionToDetailedResponse(suggestion, session, "The previous option was ");
+        return suggestionToDetailedResponse(suggestion, session,
+                "The previous option was ", intent);
     }
 
     public SpeechletResponse getTryAgainResponse(String returnSpeech) {
@@ -245,6 +282,48 @@ public class TransitSpeechletManager {
         return SpeechletResponse.newAskResponse(outputSpeech, reprompt, card);
     }
 
+    public SpeechletResponse handleYesNoIntentResponse(Session session,
+                                                       Intent intent,
+                                                       IntentRequest request)
+            throws IOException {
+        String intentName = intent.getName();
+
+        if (intentName.equals("YesIntent") &&
+            session.getAttributes().containsKey(REPROMPT_INTENT_ATTRIBUTE) &&
+            session.getAttributes().containsKey(SUGGESTION_ATTRIBUTE)) {
+            String repromptIntent = (String)session.getAttribute(REPROMPT_INTENT_ATTRIBUTE);
+
+            switch (repromptIntent) {
+                case "GetArrivalTime":
+                    return handleGetArrivalTimeRequest(request, session, intent);
+
+                case "GetTotalTransitDuration":
+                    return handleGetTotalTransitDurationRequest(session, intent);
+
+                case "GetDirections":
+                    return handleGetDirectionsRequest(session, intent);
+
+                case "AMAZON.RepeatIntent":
+                    return handleRepeatSuggestionRequest(session, intent);
+
+                case "AMAZON.NextIntent":
+                    return handleNextSuggestionRequest(session, intent);
+
+                case "AMAZON.PreviousIntent":
+                    return handlePreviousSuggestionRequest(session, intent);
+
+                default:
+                    return getErrorResponse(ERROR_STRING);
+            }
+
+        } else if (intentName.equals("NoIntent")) {
+            return SpeechletUtils.getNewTellResponse("Bye. Have a nice ride. ",
+                    "Have a safe ride.");
+        } else {
+            return getErrorResponse(ERROR_STRING);
+        }
+    }
+
     private SpeechletResponse getErrorResponse(String errorText) {
         PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
         outputSpeech.setText(errorText);
@@ -252,7 +331,8 @@ public class TransitSpeechletManager {
     }
 
     private SpeechletResponse suggestionToDetailedResponse(TransitSuggestion suggestion,
-                                                           Session session, String introText) {
+                                                           Session session, String introText,
+                                                           Intent intent) {
         StringBuilder outputSpeechBuilder = new StringBuilder();
         String transitType = suggestion.getTransitType();
 
@@ -298,14 +378,21 @@ public class TransitSpeechletManager {
                         suggestion.getNumOfSwitches() + " transit switches. ");
             }
         }
+        String suggestionOutput = outputSpeechBuilder.toString();
+        log.info("Generating reprompt question");
+        String repromptQuestion = generateRepromptQuestion(intent, session);
+        log.info("Random reprompt question generated: " + repromptQuestion);
+        outputSpeechBuilder.append(repromptQuestion);
+        Reprompt reprompt = SpeechletUtils.getReprompt(repromptQuestion);
+
         PlainTextOutputSpeech outputSpeech = new PlainTextOutputSpeech();
         outputSpeech.setText(outputSpeechBuilder.toString());
 
         SimpleCard card = new SimpleCard();
         card.setTitle("Transit Suggestion");
-        card.setContent(outputSpeechBuilder.toString());
-        session.setAttribute(PREVIOUS_RESPONSE_ATTRIBUTE, outputSpeechBuilder.toString());
-        return SpeechletResponse.newAskResponse(outputSpeech, getRandomReprompt(), card);
+        card.setContent(suggestionOutput);
+        session.setAttribute(PREVIOUS_RESPONSE_ATTRIBUTE, suggestionOutput);
+        return SpeechletResponse.newAskResponse(outputSpeech, reprompt, card);
     }
 
     private SpeechletResponse getNoMoreTransitOptionsResposne() {
@@ -315,7 +402,7 @@ public class TransitSpeechletManager {
         SimpleCard card = new SimpleCard();
         card.setTitle("Transit Suggestion");
         card.setContent(output);
-        return SpeechletResponse.newAskResponse(outputSpeech, getRandomReprompt(), card);
+        return SpeechletResponse.newTellResponse(outputSpeech, card);
     }
 
     private TransitSuggestion getCurrentTransitSuggestion(Session session) throws IOException {
@@ -349,14 +436,96 @@ public class TransitSpeechletManager {
         return suggestion;
     }
 
-    private Reprompt getRandomReprompt() {
-        Reprompt reprompt = new Reprompt();
+    /**
+     * Gets a random reprompt based on the current intent
+     * Removes the possibility of repeating the reprompt
+     * mapped to the current intent. This improves the user
+     * experience since alexa will not reprompt the same
+     * question that she just answered.
+     */
+    private String generateRepromptQuestion(Intent intent,
+                                            Session session) {
+        Map<String, Object> attributes = session.getAttributes();
+        String intentName = intent.getName();
+
+        if (intentName.equals("YesIntent")) {
+            intentName = (String) attributes.get(REPROMPT_INTENT_ATTRIBUTE);
+        }
+        Map<String, String> repromptMap = new HashMap<>(REPROMPT_QUESTIONS);
+
+        if (repromptMap.containsKey(intentName)) {
+            // Return a reprompt question that isn't
+            repromptMap.remove(intentName);
+        }
+
+        // Remove NextOption reprompt if no more next suggestions exist
+        if (!nextSuggestionExists(session)) {
+            repromptMap.remove("AMAZON.NextIntent");
+        }
+
+        // Remove PreviousOption reprompt if no more previous suggestions exist
+        if (!previousSuggestionExists(session)) {
+            repromptMap.remove("AMAZON.PreviousIntent");
+        }
+        String randomIntent = getRandomKey(repromptMap);
+        session.setAttribute(REPROMPT_INTENT_ATTRIBUTE, randomIntent);
+        String repromptQuestion = repromptMap.get(randomIntent);
+        return repromptQuestion;
+    }
+
+    private boolean nextSuggestionExists(Session session) {
+        Map<String, Object> attributes = session.getAttributes();
+
+        if (attributes == null) {
+            return false;
+        }
+
+        try {
+            if (attributes.containsKey(SUGGESTION_ATTRIBUTE)) {
+                String suggestionsText = (String) session.getAttribute(SUGGESTION_ATTRIBUTE);
+                List<TransitSuggestion> suggestions = mapper.readValue(suggestionsText,
+                        new TypeReference<List<TransitSuggestion>>(){});
+                int idx = (Integer) session.getAttribute(INDEX_ATTRIBUTE);
+
+                if (idx >= suggestions.size() - 1) {
+                    return false;
+                }
+                return true;
+            }
+        } catch (Exception ex) {
+            log.error(ex);
+            return false;
+        }
+        return false;
+    }
+
+    private boolean previousSuggestionExists(Session session) {
+        Map<String, Object> attributes = session.getAttributes();
+
+        if (attributes == null) {
+            return false;
+        }
+
+        try {
+            if (attributes.containsKey(SUGGESTION_ATTRIBUTE)) {
+                int idx = (Integer) session.getAttribute(INDEX_ATTRIBUTE);
+
+                if (idx <= 0) {
+                    return false;
+                }
+                return true;
+            }
+        } catch (Exception ex) {
+            log.error(ex);
+            return false;
+        }
+        return false;
+    }
+
+    private String getRandomKey(Map<String, String> map) {
+        List<String> keys = new ArrayList<>(map.keySet());
         Random random = new Random();
-        int index = random.nextInt(REPROMPT_RESPONSES.length);
-        String repromptText = REPROMPT_RESPONSES[index];
-        PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
-        speech.setText(repromptText);
-        reprompt.setOutputSpeech(speech);
-        return reprompt;
+        int idx = random.nextInt(keys.size());
+        return keys.get(idx);
     }
 }

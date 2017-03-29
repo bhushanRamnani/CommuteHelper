@@ -39,7 +39,7 @@ import java.util.function.Function;
  */
 public class UserSetupSpeechletManager {
 
-    private static final String SETUP_ATTRIBUTE = "setupAttribute";
+    public static final String SETUP_ATTRIBUTE = "setupAttribute";
     private static final String HOME_ADDRESS_ATTRIBUTE = "homeAddress";
     private static final String WORK_ADDRESS_ATTRIBUTE = "workAddress";
 
