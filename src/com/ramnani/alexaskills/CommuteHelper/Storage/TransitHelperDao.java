@@ -86,15 +86,17 @@ public class TransitHelperDao {
      * @return The TransitUser object that's inserted into the table
      */
     public TransitUser upsertUser(String userId, String homeAddress,
-                               Map<String, String> destinations) {
+                               Map<String, String> destinations, String timeZone) {
         Validate.notNull(userId);
         Validate.notNull(homeAddress);
         Validate.notNull(destinations);
+        Validate.notNull(timeZone);
 
         TransitUser user = new TransitUser();
         user.setUserId(userId);
         user.setHomeAddress(homeAddress);
         user.setDestinations(destinations);
+        user.setTimeZone(timeZone);
         mapper.save(user);
         return user;
     }
@@ -140,6 +142,19 @@ public class TransitHelperDao {
             user.setDestinations(destinations);
         }
         destinations.put(name, destinationAddress);
+        mapper.save(user);
+    }
+
+    public void addOrUpdateTimezone(String userId, String timezone) {
+        Validate.notNull(userId);
+        Validate.notNull(timezone);
+
+        TransitUser user = getUser(userId);
+
+        if (user == null) {
+            throw new IllegalArgumentException("User does not exist: " + userId);
+        }
+        user.setTimeZone(timezone);
         mapper.save(user);
     }
 

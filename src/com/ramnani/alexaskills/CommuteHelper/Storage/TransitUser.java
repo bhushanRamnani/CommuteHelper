@@ -18,6 +18,7 @@ package com.ramnani.alexaskills.CommuteHelper.Storage;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.encryption.DoNotEncrypt;
 
 import java.util.Map;
 
@@ -27,6 +28,7 @@ public class TransitUser {
 
     private String userId;
     private String homeAddress;
+    private String timeZone;
     private Map<String, String> destinations;
 
     @DynamoDBAttribute(attributeName="Destinations")
@@ -53,10 +55,20 @@ public class TransitUser {
         this.homeAddress = homeAddress;
     }
 
+    @DoNotEncrypt
+    @DynamoDBAttribute(attributeName="TimeZone")
+    public String getTimeZone() {
+        return timeZone;
+    }
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
+    }
+
     @Override
     public String toString() {
         return "UserId: " + userId + "\t" +
                "Home Address: " + homeAddress + "\t" +
-               "Destinations: " + destinations;
+               "Destinations: " + destinations + "\t" +
+               "Timezone: " + timeZone;
     }
 }

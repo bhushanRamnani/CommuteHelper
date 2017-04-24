@@ -18,12 +18,18 @@ package com.ramnani.alexaskills.CommuteHelper;
 import com.google.maps.DirectionsApi;
 import com.google.maps.DirectionsApiRequest;
 import com.google.maps.GeoApiContext;
+import com.google.maps.GeocodingApi;
+import com.google.maps.GeocodingApiRequest;
+import com.google.maps.PendingResult;
 import com.google.maps.PlacesApi;
 import com.google.maps.TextSearchRequest;
+import com.google.maps.TimeZoneApi;
 import com.google.maps.model.DirectionsLeg;
 import com.google.maps.model.DirectionsRoute;
 import com.google.maps.model.DirectionsStep;
 import com.google.maps.model.Duration;
+import com.google.maps.model.GeocodingResult;
+import com.google.maps.model.LatLng;
 import com.google.maps.model.PlacesSearchResponse;
 import com.google.maps.model.PlacesSearchResult;
 import com.google.maps.model.TravelMode;
@@ -35,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -76,6 +83,39 @@ public class GoogleMapsService {
                     + ". Response: " + response.toString());
         }
         return place.formattedAddress;
+    }
+
+    public String getTimezoneFromAddress(String address) {
+        GeocodingApiRequest request = GeocodingApi.geocode(geoApiContext, address);
+        GeocodingResult[] result = null;
+
+        try {
+            result = request.await();
+        } catch (Exception ex) {
+            log.error("Could not get response from geocoding API for address: " + address,
+                    ex);
+            return null;
+        }
+
+        if (result == null || result.length == 0) {
+            return null;
+        }
+        LatLng location = result[0].geometry.location;
+        PendingResult<TimeZone> timeZonePendingResult = TimeZoneApi.getTimeZone(geoApiContext, location);
+        TimeZone timeZone = null;
+
+        try {
+            timeZone = timeZonePendingResult.await();
+        } catch (Exception ex) {
+            log.error("Could not get response from timezone API for address: " + address,
+                    ex);
+            return null;
+        }
+
+        if (timeZone == null) {
+            return null;
+        }
+        return timeZone.getID();
     }
 
     public List<TransitSuggestion> getNextTransitToDestination(String transitType,

@@ -49,13 +49,16 @@ public class CommuteHelperSpeechlet implements Speechlet {
 
     private UserSetupSpeechletManager userSetupSpeechletManager;
 
+    private GoogleMapsService googleMapsService;
+
 
     public CommuteHelperSpeechlet(GoogleMapsService googleMapsService,
                                   TransitHelperDao transitHelperDao) {
         Validate.notNull(googleMapsService);
 
+        this.userStore = transitHelperDao;
+        this.googleMapsService = googleMapsService;
         transitSpeechletManager = new TransitSpeechletManager(googleMapsService);
-        userStore = transitHelperDao;
         userSetupSpeechletManager = new UserSetupSpeechletManager(transitHelperDao, googleMapsService);
     }
 
@@ -89,6 +92,7 @@ public class CommuteHelperSpeechlet implements Speechlet {
             return handleExitIntentResponse();
         }
         TransitUser transitUser = userStore.getUser(user);
+        tryUpdateTimezone(transitUser);
 
         if (transitUser == null) {
             log.info("User does not exist. Handling user setup. User: " + user);
@@ -100,14 +104,16 @@ public class CommuteHelperSpeechlet implements Speechlet {
             if ("GetNextTransitToWork".equals(intentName)) {
                 return transitSpeechletManager.handleNextTransitRequest(intent, session, transitUser);
             } else if ("GetArrivalTime".equals(intentName)) {
-                return transitSpeechletManager.handleGetArrivalTimeRequest(intentRequest, session, intent);
+                return transitSpeechletManager.handleGetArrivalTimeRequest(intentRequest, session, intent, transitUser);
             } else if ("GetTotalTransitDuration".equals(intentName)) {
                 return transitSpeechletManager.handleGetTotalTransitDurationRequest(session, intent);
             } else if ("GetDirections".equals(intentName)) {
                 return transitSpeechletManager.handleGetDirectionsRequest(session, intent);
             } else if ("UpdateHomeAddress".equals(intentName)) {
+                clearSessionAttributes(session);
                 return userSetupSpeechletManager.handleUpdateHomeAddressRequest(session);
             } else if ("UpdateWorkAddress".equals(intentName)) {
+                clearSessionAttributes(session);
                 return userSetupSpeechletManager.handleUpdateWorkAddressRequest(session);
             } else if ("PutPostalAddress".equals(intentName)) {
                 return userSetupSpeechletManager.handleUpdatePostalAddressRequest(session, intent);
@@ -123,7 +129,7 @@ public class CommuteHelperSpeechlet implements Speechlet {
                 return transitSpeechletManager.handlePreviousSuggestionRequest(session, intent);
             } else if ("YesIntent".equals(intentName)
                      || "NoIntent".equals(intentName)) {
-                return handleYesNoRequest(session, intent, intentRequest);
+                return handleYesNoRequest(session, intent, intentRequest, transitUser);
             } else if ("AMAZON.HelpIntent".equals(intentName)) {
                 return handleHelpRequest();
             } else {
@@ -169,7 +175,8 @@ public class CommuteHelperSpeechlet implements Speechlet {
 
     private SpeechletResponse handleYesNoRequest(Session session,
                                                  Intent intent,
-                                                 IntentRequest request)
+                                                 IntentRequest request,
+                                                 TransitUser user)
             throws IOException {
         Map<String, Object> sessionAttributes = session.getAttributes();
 
@@ -177,7 +184,7 @@ public class CommuteHelperSpeechlet implements Speechlet {
             // User is in a Transit Suggestion related session
             log.info("Handling suggestion.");
             return transitSpeechletManager
-                    .handleYesNoIntentResponse(session, intent, request);
+                    .handleYesNoIntentResponse(session, intent, request, user);
         } else if (sessionAttributes.containsKey(UserSetupSpeechletManager.SETUP_ATTRIBUTE)) {
             // User is in a Setup session
             log.info("Handling address setup");
@@ -220,5 +227,38 @@ public class CommuteHelperSpeechlet implements Speechlet {
         SimpleCard card = new SimpleCard();
         card.setContent(byeText);
         return SpeechletResponse.newTellResponse(speech, card);
+    }
+
+    /**
+     * This is to update the existing user's timezone
+     * @param user
+     */
+    private void tryUpdateTimezone(TransitUser user) {
+        if (user == null) {
+            return;
+        }
+        String timezone = user.getTimeZone();
+
+        if (timezone == null || timezone.length() == 0) {
+            log.info("Trying to update timezone for user: " + user.getUserId());
+
+            try {
+                String homeAddress = user.getHomeAddress();
+                timezone = googleMapsService.getTimezoneFromAddress(homeAddress);
+                userStore.addOrUpdateTimezone(user.getUserId(), timezone);
+                log.info("Updated timezone: " + timezone +
+                        ". For user: " + user.getUserId());
+            } catch (Exception ex) {
+                log.error("Unable to update timezone.", ex);
+            }
+        }
+    }
+
+    private void clearSessionAttributes(Session session) {
+        Map<String, Object> attributes = session.getAttributes();
+
+        if (attributes != null) {
+            attributes.clear();
+        }
     }
 }

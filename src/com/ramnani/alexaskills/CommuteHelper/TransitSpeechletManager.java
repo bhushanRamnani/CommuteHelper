@@ -61,6 +61,8 @@ public class TransitSpeechletManager {
 
     private static final String PREVIOUS_RESPONSE_ATTRIBUTE = "previousResponse";
 
+    private static final String DEFAULT_TIMEZONE = "America/Los_Angeles";
+
     private static final String HELP_STRING = "Sorry. I don't know that. " +
             "First, ask me for a transit suggestion. " +
             "For example, ask me when's my next bus";
@@ -135,7 +137,8 @@ public class TransitSpeechletManager {
 
     public SpeechletResponse handleGetArrivalTimeRequest(IntentRequest request,
                                                          Session session,
-                                                         Intent intent)
+                                                         Intent intent,
+                                                         TransitUser user)
             throws IOException {
         TransitSuggestion suggestion = getCurrentTransitSuggestion(session);
 
@@ -146,8 +149,11 @@ public class TransitSpeechletManager {
         DateTimeFormatter formatter = DateTimeFormat.forPattern(TIME_FORMAT)
                 .withLocale(request.getLocale());
 
+        String timezone =
+                user.getTimeZone() == null ? DEFAULT_TIMEZONE : user.getTimeZone();
+
         String output = "You will arrive at " + suggestion.getArrivalTime()
-                .withZone(DateTimeZone.forID("America/Los_Angeles"))
+                .withZone(DateTimeZone.forID(timezone))
                 .toString(formatter);
         output = output.concat(".");
         String repromptQuestion = generateRepromptQuestion(intent, session);
@@ -284,7 +290,8 @@ public class TransitSpeechletManager {
 
     public SpeechletResponse handleYesNoIntentResponse(Session session,
                                                        Intent intent,
-                                                       IntentRequest request)
+                                                       IntentRequest request,
+                                                       TransitUser user)
             throws IOException {
         String intentName = intent.getName();
 
@@ -295,7 +302,7 @@ public class TransitSpeechletManager {
 
             switch (repromptIntent) {
                 case "GetArrivalTime":
-                    return handleGetArrivalTimeRequest(request, session, intent);
+                    return handleGetArrivalTimeRequest(request, session, intent, user);
 
                 case "GetTotalTransitDuration":
                     return handleGetTotalTransitDurationRequest(session, intent);

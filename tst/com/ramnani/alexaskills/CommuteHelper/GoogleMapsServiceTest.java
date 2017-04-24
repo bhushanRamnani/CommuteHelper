@@ -15,6 +15,7 @@
  */
 package com.ramnani.alexaskills.CommuteHelper;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,5 +52,12 @@ public class GoogleMapsServiceTest {
     public void getNextTransitToPlace_Sanity() {
         String address = service.getAddressOfPlace("999 Belmont terr Sunnyvale California");
         assertNotNull(address);
+    }
+
+    @Test
+    public void getTimezoneFromAddress_sanity() {
+        String timezone = service.getTimezoneFromAddress("2400 Boyer Ave E, Seattle, WA 98112");
+        assertNotNull(timezone);
+        Assert.assertEquals("America/Los_Angeles", timezone);
     }
 }

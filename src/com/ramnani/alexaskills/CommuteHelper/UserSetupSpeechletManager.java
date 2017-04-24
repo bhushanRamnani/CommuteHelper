@@ -205,8 +205,18 @@ public class UserSetupSpeechletManager {
 
     private SpeechletResponse updateHomeAddressInDatabaseAndRespond(String userId, String homeAddress) {
         try {
+            log.info("Updating home address.");
             TransitUser updatedUser = userStore.updateHomeAddress(userId, homeAddress);
             log.info("Updated user home address: " + updatedUser.getHomeAddress());
+
+            log.info("Updating timezone.");
+
+            try {
+                String timezone = googleMaps.getTimezoneFromAddress(homeAddress);
+                userStore.addOrUpdateTimezone(userId, timezone);
+            } catch (Exception e1) {
+                log.error("Could not update timezone.", e1);
+            }
             return getNewTellResponse("OK. I changed your home address.", "Home address changed");
         } catch (Exception ex) {
             log.error("Could not update home address: ", ex);
@@ -287,10 +297,17 @@ public class UserSetupSpeechletManager {
         Map<String, String> destinations = new HashMap<>();
         destinations.put(WORK_KEY, workAddress);
         TransitUser user = null;
+        String timeZone = null;
+
+        try {
+            timeZone = googleMaps.getTimezoneFromAddress(homeAddress);
+        } catch (Exception ex) {
+            log.error("Unable to obtain time zone from google maps API.", ex);
+        }
 
         try {
             log.info("Attempting to insert user: " + userId);
-            user = userStore.upsertUser(userId, homeAddress, destinations);
+            user = userStore.upsertUser(userId, homeAddress, destinations, timeZone);
             log.info("Inserted user: " + user);
         } catch (Exception ex) {
             log.error("Could not insert user into the TransitUsers table.", ex);

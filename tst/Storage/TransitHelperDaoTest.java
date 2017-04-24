@@ -35,6 +35,7 @@ import java.util.Map;
 public class TransitHelperDaoTest {
 
     private String myUserId = "userId";
+    private String timezone = "America/Los_Angeles";
 
     @Autowired
     private TransitHelperDao transitHelperDao;
@@ -54,12 +55,12 @@ public class TransitHelperDaoTest {
 
     @Test
     public void addNewUser_withTwoDestinations() {
-        String userId1 = "User2";
-        String address1 = "2401 Tozer Ave E, Seattle, WA 99122";
+        String userId1 = "amzn1.ask.account.AHDOT44PW7ZLQ2ZDHRORE5G24WXP2CVUMNNRDEFOSWTCCCDQQEE4Q2Z4M4IKUU2EW4RMPVT57GVRRDIGAYEYUBTDJAVYHCGHVYC7QJFRVLL36QOYNR3IIAWP4PTQIYT7ZD3WARDF337F2MNYX5GQ";
+        String address1 = "2561 Toyer Ave W. Seattle, WA - 98123";
         Map<String, String> destinations = new HashMap<>();
         destinations.put("Sam's place", "1919 55th Ave, Seattle, WA - 98223");
-        destinations.put("work", "2020 66th Ave NE, Seattle, WA 98101");
-        TransitUser user = transitHelperDao.upsertUser(userId1, address1, destinations);
+        destinations.put("work", "1918 8th Avenue, Seattle, Washington");
+        TransitUser user = transitHelperDao.upsertUser(userId1, address1, destinations, timezone);
         Assert.assertEquals(userId1, user.getUserId());
         Assert.assertEquals(address1, user.getHomeAddress());
         Assert.assertEquals(destinations, user.getDestinations());
@@ -127,7 +128,7 @@ public class TransitHelperDaoTest {
         Map<String, String> destinations = new HashMap<>();
         destinations.put(destinationName1, destinationAddress1);
         destinations.put(destinationName2, destinationAddress2);
-        TransitUser user = transitHelperDao.upsertUser(userId, address, destinations);
+        TransitUser user = transitHelperDao.upsertUser(userId, address, destinations, timezone);
         Assert.assertEquals(userId, user.getUserId());
         Assert.assertEquals(address, user.getHomeAddress());
         Assert.assertEquals(destinations, user.getDestinations());
@@ -139,7 +140,7 @@ public class TransitHelperDaoTest {
         Map<String, String> destinations2 = new HashMap<>();
         destinations2.put("Tom's place", "11000 55th Ave, San Francisco, CA - 98223");
         destinations2.put("Gym", "32312 43rd Ave, San Francisco, CA - 94445");
-        TransitUser updatedUser = transitHelperDao.upsertUser(userId, address, destinations2);
+        TransitUser updatedUser = transitHelperDao.upsertUser(userId, address, destinations2, timezone);
         Assert.assertEquals(userId, updatedUser.getUserId());
         Assert.assertEquals(address, updatedUser.getHomeAddress(), updatedUser.getHomeAddress());
         Assert.assertEquals(destinations2, updatedUser.getDestinations());
@@ -160,7 +161,7 @@ public class TransitHelperDaoTest {
         String destinationAddress2 =  "3211 43rd Ave, Seattle, WA - 94445";
         Map<String, String> destinations = new HashMap<>();
         destinations.put(destinationName1, destinationAddress1);
-        TransitUser user = transitHelperDao.upsertUser(userId, address, destinations);
+        TransitUser user = transitHelperDao.upsertUser(userId, address, destinations, timezone);
         Assert.assertEquals(userId, user.getUserId());
         Assert.assertEquals(address, user.getHomeAddress());
         Assert.assertEquals(destinations, user.getDestinations());
@@ -184,7 +185,7 @@ public class TransitHelperDaoTest {
         Map<String, String> destinations = new HashMap<>();
         destinations.put("Sam's place", "1919 55th Ave, Seattle, WA - 98223");
         destinations.put("Work", "3211 43rd Ave, Seattle, WA - 94445");
-        TransitUser user = transitHelperDao.upsertUser(userId, address, destinations);
+        TransitUser user = transitHelperDao.upsertUser(userId, address, destinations, timezone);
         Assert.assertEquals(userId, user.getUserId());
         Assert.assertEquals(address, user.getHomeAddress());
         Assert.assertEquals(destinations, user.getDestinations());
@@ -196,7 +197,7 @@ public class TransitHelperDaoTest {
         String updatedWorkDestination = "42323 Houston Ave, Wonderland, India";
         transitHelperDao.addOrUpdateDestination(userId, "Work", updatedWorkDestination);
         destinations.put("Work", updatedWorkDestination);
-        user = transitHelperDao.upsertUser(userId, address, destinations);
+        user = transitHelperDao.upsertUser(userId, address, destinations, timezone);
         Assert.assertEquals(destinations, user.getDestinations());
         userFromDb = transitHelperDao.getUser(userId);
         Assert.assertEquals(destinations, userFromDb.getDestinations());
