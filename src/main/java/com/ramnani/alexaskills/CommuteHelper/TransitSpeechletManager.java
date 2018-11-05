@@ -20,13 +20,11 @@ import com.amazon.speech.slu.Slot;
 import com.amazon.speech.speechlet.IntentRequest;
 import com.amazon.speech.speechlet.Session;
 import com.amazon.speech.speechlet.SpeechletResponse;
-import com.amazon.speech.ui.PlainTextOutputSpeech;
-import com.amazon.speech.ui.Reprompt;
-import com.amazon.speech.ui.SimpleCard;
-import com.amazon.speech.ui.SsmlOutputSpeech;
+import com.amazon.speech.ui.*;
 import com.google.maps.model.Duration;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitUser;
 import com.ramnani.alexaskills.CommuteHelper.utils.SpeechletUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -107,6 +105,16 @@ public class TransitSpeechletManager {
         if (homeAddress == null || homeAddress.isEmpty()) {
             log.error("Sorry. Home Address does not exist for user: " + user.getUserId());
             return getErrorResponse("Home Address does not exist.");
+        }
+
+        if (StringUtils.isBlank(transitType)) {
+            log.info("Transit type not provided with session: " + session.getSessionId());
+            String output = "Please specify your preferred mode of transport. For example, you can ask,"
+                    + " When's the next bus to work ?";
+            Reprompt reprompt = SpeechletUtils.getReprompt(output);
+            PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
+            speech.setText(output);
+            return SpeechletResponse.newAskResponse(speech, reprompt);
         }
         Map<String, String> destinations = user.getDestinations();
         log.info("Destinations : " + destinations.toString() + ". User: " + user.getUserId());
@@ -435,7 +443,7 @@ public class TransitSpeechletManager {
         }
 
         if (repromptMap.containsKey(intentName)) {
-            // Return a reprompt question that isn't
+            // Return a reprompt question that doesn't reprompt for the current intent.
             repromptMap.remove(intentName);
         }
 

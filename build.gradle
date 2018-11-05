@@ -12,18 +12,39 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.amazon.alexa:alexa-skills-kit:1.2'
-    implementation 'com.amazonaws:aws-dynamodb-encryption-java:1.11.0'
-    implementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.105'
-    implementation 'com.amazonaws:aws-java-sdk-kms:1.11.105'
-    implementation 'com.amazonaws:aws-lambda-java-log4j:1.0.0'
-    implementation 'com.google.maps:google-maps-services:0.1.9'
-    implementation 'org.codehaus.jackson:jackson-mapper-asl:1.9.9'
-    implementation 'org.springframework:spring-aop:4.1.6.RELEASE'
-    implementation 'org.springframework:spring-aspects:4.1.6.RELEASE'
-    implementation 'org.springframework:spring-beans:4.1.6.RELEASE'
-    implementation 'org.springframework:spring-context:4.1.6.RELEASE'
-    implementation 'org.springframework:spring-core:4.1.6.RELEASE'
-    implementation 'org.springframework:spring-test:4.1.6.RELEASE'
+    compile (
+            'com.amazon.alexa:alexa-skills-kit:1.2',
+            'com.amazonaws:aws-dynamodb-encryption-java:1.11.0',
+            'com.amazonaws:aws-java-sdk-dynamodb:1.11.105',
+            'com.amazonaws:aws-java-sdk-kms:1.11.105',
+            'com.amazonaws:aws-lambda-java-log4j:1.0.0',
+            'com.google.maps:google-maps-services:0.1.9',
+            'org.codehaus.jackson:jackson-mapper-asl:1.9.9',
+            'org.springframework:spring-aop:4.1.6.RELEASE',
+            'org.springframework:spring-aspects:4.1.6.RELEASE',
+            'org.springframework:spring-beans:4.1.6.RELEASE',
+            'org.springframework:spring-context:4.1.6.RELEASE',
+            'org.springframework:spring-core:4.1.6.RELEASE',
+            'org.springframework:spring-test:4.1.6.RELEASE'
+    )
     testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+task buildZip(type: Zip) {
+    from compileJava
+    from processResources
+    into('lib') {
+        from configurations.compileClasspath
+    }
+}
+
+build.dependsOn buildZip
+
+task uberJar(type: Jar) {
+    appendix = 'uber'
+
+    from sourceSets.main.output
+    from configurations.runtimeClasspath.
+            findAll { it.name.endsWith('jar') }.
+            collect { zipTree(it) }
 }

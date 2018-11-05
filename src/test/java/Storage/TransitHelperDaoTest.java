@@ -18,6 +18,7 @@ package Storage;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitHelperDao;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitUser;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,7 @@ import java.util.Map;
 /**
  * Unit Tests for TransitHelperDao
  */
+@Ignore
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration("/test-config.xml")
 public class TransitHelperDaoTest {

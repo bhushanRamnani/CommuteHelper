@@ -16,6 +16,7 @@
 package com.ramnani.alexaskills.CommuteHelper;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by ramnanib on 12/4/16.
  */
-
+@Ignore
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration("/test-config.xml")
 public class GoogleMapsServiceTest {
