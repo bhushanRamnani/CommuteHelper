@@ -152,7 +152,7 @@ public class CommuteHelperSpeechlet implements Speechlet {
      * @return SpeechletResponse spoken and visual response for the given intent
      */
     private SpeechletResponse getWelcomeResponse() {
-        String speechText = "Hi! I'm Transit Helper. " +
+        String speechText = "Hi! I'm Transit Helper Gamma Version 2. " +
                 "I'll be glad to help you with transit information from" +
                 " home to work. For example, you can ask me, " +
                 "\"when's the next bus to work\".";

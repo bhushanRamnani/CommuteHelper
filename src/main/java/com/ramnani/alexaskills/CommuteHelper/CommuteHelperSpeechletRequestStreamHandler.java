@@ -38,7 +38,7 @@ public class CommuteHelperSpeechletRequestStreamHandler extends SpeechletRequest
          * Alexa Skill and put the relevant Application Ids in this Set.
          */
         supportedApplicationIds = new HashSet<>();
-        supportedApplicationIds.add("amzn1.ask.skill.195ed8b2-5a91-403d-8aa5-f6c4837d066b");
+        supportedApplicationIds.add("amzn1.ask.skill.87670333-a7fa-45d5-afbe-0a6030917bd8");
         appContext =  new ClassPathXmlApplicationContext("application-config.xml");
         googleMapsService = (GoogleMapsService) appContext.getBean("googleMapsService");
         transitHelperDao = (TransitHelperDao) appContext.getBean("transitHelperDao");
