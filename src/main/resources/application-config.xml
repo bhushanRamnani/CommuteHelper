@@ -5,11 +5,11 @@
 
     <bean id="googleMapsService"
           class="com.ramnani.alexaskills.CommuteHelper.GoogleMapsService">
-        <constructor-arg index="0" value="AIzaSyD2vQybmjrsVz-JuV3rNc8cz0cIplJWZIM" />
+        <constructor-arg index="0" value="" />
     </bean>
 
     <bean id="transitHelperDao"
           class="com.ramnani.alexaskills.CommuteHelper.Storage.TransitHelperDao">
-        <constructor-arg name="kmsKeyId" value="1dcd1a80-c288-4cb5-b687-1696fba599c2" />
+        <constructor-arg name="kmsKeyId" value="" />
     </bean>
 </beans>

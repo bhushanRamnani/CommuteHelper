@@ -13,13 +13,13 @@ repositories {
 
 dependencies {
     compile (
-            'com.amazon.alexa:ask-sdk:2.3.4',
+            'com.amazon.alexa:ask-sdk:2.20.1',
             'com.amazonaws:aws-dynamodb-encryption-java:1.11.0',
             'com.amazonaws:aws-java-sdk-dynamodb:1.11.105',
             'com.amazonaws:aws-java-sdk-kms:1.11.105',
             'com.amazonaws:aws-lambda-java-log4j:1.0.0',
-            'org.'
             'com.google.maps:google-maps-services:0.1.9',
+            'org.apache.commons:commons-lang3:3.9',
             'org.codehaus.jackson:jackson-mapper-asl:1.9.9',
             'org.springframework:spring-aop:4.1.6.RELEASE',
             'org.springframework:spring-aspects:4.1.6.RELEASE',

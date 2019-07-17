@@ -141,38 +141,6 @@ public class CommuteHelperSpeechlet implements Speechlet {
         }
     }
 
-    @Override
-    public void onSessionEnded(SessionEndedRequest sessionEndedRequest,
-                               Session session) throws SpeechletException {
-    }
-
-    /**
-     * Creates and returns a {@code SpeechletResponse} with a welcome message.
-     *
-     * @return SpeechletResponse spoken and visual response for the given intent
-     */
-    private SpeechletResponse getWelcomeResponse() {
-        String speechText = "Hi! I'm Transit Helper Gamma Version 2. " +
-                "I'll be glad to help you with transit information from" +
-                " home to work. For example, you can ask me, " +
-                "\"when's the next bus to work\".";
-
-        // Create the Simple card content.
-        SimpleCard card = new SimpleCard();
-        card.setTitle("Transit Helper");
-        card.setContent(speechText);
-
-        // Create the plain text output.
-        PlainTextOutputSpeech speech = new PlainTextOutputSpeech();
-        speech.setText(speechText);
-
-        // Create reprompt
-        Reprompt reprompt = new Reprompt();
-        reprompt.setOutputSpeech(speech);
-
-        return SpeechletResponse.newAskResponse(speech, reprompt, card);
-    }
-
     private SpeechletResponse handleYesNoRequest(Session session,
                                                  Intent intent,
                                                  IntentRequest request,
