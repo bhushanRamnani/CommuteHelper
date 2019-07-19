@@ -5,10 +5,11 @@ import com.amazon.ask.dispatcher.request.handler.impl.IntentRequestHandler;
 import com.amazon.ask.model.IntentRequest;
 import com.amazon.ask.model.Response;
 import com.amazon.ask.request.Predicates;
-import com.amazon.ask.response.ResponseBuilder;
-import com.ramnani.alexaskills.CommuteHelper.CommuteHelperSpeechlet;
+import com.ramnani.alexaskills.CommuteHelper.Storage.TransitUser;
 import com.ramnani.alexaskills.CommuteHelper.TransitSpeechletManager;
 import com.ramnani.alexaskills.CommuteHelper.UserSetupSpeechletManager;
+import com.ramnani.alexaskills.CommuteHelper.util.AlexaUtils;
+import com.ramnani.alexaskills.CommuteHelper.util.Validator;
 import org.apache.log4j.Logger;
 
 import java.util.Map;
@@ -35,34 +36,29 @@ public class YesOrNoRequestHandler implements IntentRequestHandler {
 
     @Override
     public Optional<Response> handle(HandlerInput input, IntentRequest intentRequest) {
+        Validator.validateHandlerInput(input);
+        Validator.validateIntentRequest(intentRequest);
+
+        Optional<TransitUser> transitUser = userSetupSpeechletManager.getTransitUser(input);
+
+        if (!transitUser.isPresent()) {
+            log.info("Transit user does not exist. Going through user setup: " + AlexaUtils.getUserId(input));
+            return userSetupSpeechletManager.handleUserSetup(input, intentRequest.getIntent());
+        }
+
         Map<String, Object> sessionAttributes = input.getAttributesManager().getSessionAttributes();
 
         if (sessionAttributes.containsKey(TransitSpeechletManager.SUGGESTION_ATTRIBUTE)) {
             // User is in a Transit Suggestion related session
             log.info("Handling suggestion.");
             return transitSpeechletManager
-                    .handleYesNoIntentResponse(session, intent, request, user);
+                    .handleYesNoIntentResponse(input, intentRequest, transitUser.get());
         } else if (sessionAttributes.containsKey(UserSetupSpeechletManager.SETUP_ATTRIBUTE)) {
             // User is in a Setup session
             log.info("Handling address setup");
             return userSetupSpeechletManager
-                    .handleVerifyPostalAddressRequest(session, intent);
+                    .handleVerifyPostalAddressRequest(input, intentRequest.getIntent());
         }
-        return getInternalServerErrorResponse();
-
-        return input.getResponseBuilder()
-                .withSpeech(speechText)
-                .withSimpleCard("Transit Helper", speechText)
-                .withReprompt(speechText)
-                .build();
-    }
-
-    @Override
-    public boolean canHandle(HandlerInput input) {
-    }
-
-    @Override
-    public Optional<Response> handle(HandlerInput input) {
-
+        return AlexaUtils.getInternalServerErrorResponse(input);
     }
 }

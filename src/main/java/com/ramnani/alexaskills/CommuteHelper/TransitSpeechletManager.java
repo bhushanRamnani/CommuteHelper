@@ -24,6 +24,7 @@ import com.amazon.ask.model.Slot;
 import com.amazon.ask.response.ResponseBuilder;
 import com.google.maps.model.Duration;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitUser;
+import com.ramnani.alexaskills.CommuteHelper.util.Validator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.log4j.Logger;
@@ -163,9 +164,10 @@ public class TransitSpeechletManager {
 
     public Optional<Response> handleGetArrivalTimeRequest(IntentRequest request,
                                                           HandlerInput handlerInput,
-                                                          Intent intent,
-                                                          TransitUser user)
-            throws IOException {
+                                                          TransitUser user) {
+        Validator.validateIntentRequest(request);
+        Validator.validateHandlerInput(handlerInput);
+
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager()
                 .getSessionAttributes();
         TransitSuggestion suggestion = getCurrentTransitSuggestion(sessionAttributes);
@@ -193,12 +195,13 @@ public class TransitSpeechletManager {
                 .withZone(DateTimeZone.forID(timezone))
                 .toString(formatter);
         arrivalTimeOutput.append(output + ".");
+        Intent intent = request.getIntent();
         return addRepromptQuestionAndReturnResponse(arrivalTimeOutput,
                 "Arrival Time", handlerInput, intent);
     }
 
     public Optional<Response> handleGetTotalTransitDurationRequest(HandlerInput handlerInput,
-                                                                   Intent intent) throws IOException {
+                                                                   Intent intent) {
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager()
                 .getSessionAttributes();
         TransitSuggestion suggestion = getCurrentTransitSuggestion(sessionAttributes);
@@ -220,7 +223,7 @@ public class TransitSpeechletManager {
     }
 
     public Optional<Response> handleGetDirectionsRequest(HandlerInput handlerInput,
-                                                         Intent intent) throws IOException {
+                                                         Intent intent) {
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager()
                 .getSessionAttributes();
 
@@ -247,8 +250,7 @@ public class TransitSpeechletManager {
     }
 
     public Optional<Response> handleRepeatSuggestionRequest(HandlerInput handlerInput,
-                                                            Intent intent)
-            throws IOException {
+                                                            Intent intent) {
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager()
                 .getSessionAttributes();
         String previousResponse = (String) sessionAttributes.get(PREVIOUS_RESPONSE_ATTRIBUTE);
@@ -264,8 +266,7 @@ public class TransitSpeechletManager {
     }
 
     public Optional<Response> handleNextSuggestionRequest(HandlerInput handlerInput,
-                                                          Intent intent)
-            throws IOException {
+                                                          Intent intent) {
         TransitSuggestion suggestion;
 
         try {
@@ -279,8 +280,7 @@ public class TransitSpeechletManager {
     }
 
     public Optional<Response> handlePreviousSuggestionRequest(HandlerInput handlerInput,
-                                                              Intent intent)
-            throws IOException {
+                                                              Intent intent) {
         TransitSuggestion suggestion;
 
         try {
@@ -303,10 +303,12 @@ public class TransitSpeechletManager {
     }
 
     public Optional<Response> handleYesNoIntentResponse(HandlerInput handlerInput,
-                                                        Intent intent,
                                                         IntentRequest request,
-                                                        TransitUser user)
-            throws IOException {
+                                                        TransitUser user) {
+        Validator.validateHandlerInput(handlerInput);
+        Validator.validateIntentRequest(request);
+
+        Intent intent = request.getIntent();
         String intentName = intent.getName();
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager()
                 .getSessionAttributes();
@@ -318,7 +320,7 @@ public class TransitSpeechletManager {
 
             switch (repromptIntent) {
                 case "GetArrivalTime":
-                    return handleGetArrivalTimeRequest(request, handlerInput, intent, user);
+                    return handleGetArrivalTimeRequest(request, handlerInput, user);
 
                 case "GetTotalTransitDuration":
                     return handleGetTotalTransitDurationRequest(handlerInput, intent);
@@ -416,22 +418,28 @@ public class TransitSpeechletManager {
                 .build();
     }
 
-    private TransitSuggestion getCurrentTransitSuggestion(Map<String, Object> sessionAttributes)
-            throws IOException {
+    private TransitSuggestion getCurrentTransitSuggestion(Map<String, Object> sessionAttributes) {
         TransitSuggestion suggestion = getTransitSuggestionFromSession(sessionAttributes, 0);
         return suggestion;
     }
 
     private TransitSuggestion getTransitSuggestionFromSession(Map<String, Object> sessionAttributes,
-                                                              int indexAdd) throws IOException {
+                                                              int indexAdd) {
 
         if (!sessionAttributes.containsKey(INDEX_ATTRIBUTE) ||
                 !sessionAttributes.containsKey(SUGGESTION_ATTRIBUTE)) {
             return null;
         }
         String suggestionsText = (String) sessionAttributes.get(SUGGESTION_ATTRIBUTE);
-        List<TransitSuggestion> suggestions = mapper.readValue(suggestionsText,
-                new TypeReference<List<TransitSuggestion>>(){});
+
+        List<TransitSuggestion> suggestions = null;
+
+        try {
+            suggestions = mapper.readValue(suggestionsText,
+                    new TypeReference<List<TransitSuggestion>>(){});
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to parse suggestions: " + suggestionsText, ex);
+        }
 
         int idx = (Integer) sessionAttributes.get(INDEX_ATTRIBUTE);
         idx += indexAdd;
