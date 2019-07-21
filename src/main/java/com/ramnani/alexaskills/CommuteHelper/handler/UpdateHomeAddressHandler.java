@@ -25,28 +25,26 @@ import com.ramnani.alexaskills.CommuteHelper.TransitSpeechletManager;
 import com.ramnani.alexaskills.CommuteHelper.UserSetupSpeechletManager;
 import com.ramnani.alexaskills.CommuteHelper.util.AlexaUtils;
 import com.ramnani.alexaskills.CommuteHelper.util.Validator;
+import org.apache.commons.lang3.Validate;
 import org.apache.log4j.Logger;
 
-import java.util.Map;
 import java.util.Optional;
 
-public class YesOrNoRequestHandler implements IntentRequestHandler {
+public class UpdateHomeAddressHandler implements IntentRequestHandler {
 
-    private static final Logger log = Logger.getLogger(YesOrNoRequestHandler.class);
+    private static final Logger log = Logger.getLogger(UpdateHomeAddressHandler.class);
 
-    private TransitSpeechletManager transitSpeechletManager;
     private UserSetupSpeechletManager userSetupSpeechletManager;
 
-    public YesOrNoRequestHandler(TransitSpeechletManager transitSpeechletManager,
-                                 UserSetupSpeechletManager userSetupSpeechletManager) {
-        this.transitSpeechletManager = transitSpeechletManager;
+    public UpdateHomeAddressHandler(UserSetupSpeechletManager userSetupSpeechletManager) {
+        Validate.notNull(userSetupSpeechletManager);
+
         this.userSetupSpeechletManager = userSetupSpeechletManager;
     }
 
     @Override
     public boolean canHandle(HandlerInput input, IntentRequest intentRequest) {
-        return input.matches(Predicates.intentName("YesIntent")
-                .or(Predicates.intentName("NoIntent")));
+        return input.matches(Predicates.intentName("UpdateHomeAddress"));
     }
 
     @Override
@@ -54,26 +52,8 @@ public class YesOrNoRequestHandler implements IntentRequestHandler {
         Validator.validateHandlerInput(input);
         Validator.validateIntentRequest(intentRequest);
 
-        Optional<TransitUser> transitUser = userSetupSpeechletManager.getTransitUser(input);
+        input.getAttributesManager().getSessionAttributes().clear();
 
-        if (!transitUser.isPresent()) {
-            log.info("Transit user does not exist. Going through user setup: " + AlexaUtils.getUserId(input));
-            return userSetupSpeechletManager.handleUserSetup(input, intentRequest.getIntent());
-        }
-
-        Map<String, Object> sessionAttributes = input.getAttributesManager().getSessionAttributes();
-
-        if (sessionAttributes.containsKey(TransitSpeechletManager.SUGGESTION_ATTRIBUTE)) {
-            // User is in a Transit Suggestion related session
-            log.info("Handling suggestion.");
-            return transitSpeechletManager
-                    .handleYesNoIntentResponse(input, intentRequest, transitUser.get());
-        } else if (sessionAttributes.containsKey(UserSetupSpeechletManager.SETUP_ATTRIBUTE)) {
-            // User is in a Setup session
-            log.info("Handling address setup");
-            return userSetupSpeechletManager
-                    .handleVerifyPostalAddressRequest(input, intentRequest.getIntent());
-        }
-        return AlexaUtils.getInternalServerErrorResponse(input);
+        return userSetupSpeechletManager.handleUpdateHomeAddressRequest(input);
     }
 }

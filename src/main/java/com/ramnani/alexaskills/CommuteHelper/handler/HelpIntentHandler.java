@@ -17,27 +17,33 @@ package com.ramnani.alexaskills.CommuteHelper.handler;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.dispatcher.request.handler.RequestHandler;
-import com.amazon.ask.model.LaunchRequest;
 import com.amazon.ask.model.Response;
 import com.amazon.ask.request.Predicates;
+import com.ramnani.alexaskills.CommuteHelper.util.Validator;
+import org.apache.log4j.Logger;
 
 import java.util.Optional;
 
-public class LaunchRequestHandler implements RequestHandler {
+public class HelpIntentHandler implements RequestHandler {
+
+    private static final Logger log = Logger.getLogger(HelpIntentHandler.class);
+
     @Override
     public boolean canHandle(HandlerInput input) {
-        return input.matches(Predicates.requestType(LaunchRequest.class));
+        return input.matches(Predicates.intentName("AMAZON.HelpIntent"));
     }
 
     @Override
     public Optional<Response> handle(HandlerInput input) {
-        String speechText = "Hi! I'm Transit Helper Gamma Version 2. " +
-                "I'll be glad to help you with transit information from" +
-                " home to work. For example, you can ask me, " +
-                "\"when's the next bus to work\".";
-        return input.getResponseBuilder()
-                .withSpeech(speechText)
-                .withSimpleCard("Transit Helper", speechText)
+        Validator.validateHandlerInput(input);
+
+        String speechText = "In order to get transit information from your home to work," +
+                " you can ask me, \"when's the next bus to work\", or, \"when's the next transit" +
+                " to work.\". After that, I can help you with more information, like arrival time," +
+                " duration of travel, and directions.";
+
+        return input.getResponseBuilder().withSpeech(speechText)
+                .withSimpleCard("Usage", speechText)
                 .withReprompt(speechText)
                 .build();
     }

@@ -34,7 +34,6 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -100,7 +99,7 @@ public class TransitSpeechletManager {
 
     public Optional<Response> handleNextTransitRequest(Intent intent,
                                                        TransitUser user,
-                                                       HandlerInput handlerInput) throws IOException {
+                                                       HandlerInput handlerInput) {
         Slot slot = intent.getSlots().get(SLOT_TRANSIT);
         String transitType = slot.getValue();
         String homeAddress = user.getHomeAddress();
@@ -154,7 +153,13 @@ public class TransitSpeechletManager {
                     .withShouldEndSession(true)
                     .build();
         }
-        sessionAttributes.put(SUGGESTION_ATTRIBUTE, mapper.writeValueAsString(suggestions));
+
+        try {
+            sessionAttributes.put(SUGGESTION_ATTRIBUTE, mapper.writeValueAsString(suggestions));
+        } catch (Exception ex) {
+            log.error("Failed to parse suggestions: " + suggestions, ex);
+            throw new IllegalStateException("Failed to parse suggestions: " + suggestions);
+        }
         sessionAttributes.put(INDEX_ATTRIBUTE, 0);
         TransitSuggestion suggestion = suggestions.get(0);
         Optional<Response> response = suggestionToDetailedResponse(suggestion, handlerInput,

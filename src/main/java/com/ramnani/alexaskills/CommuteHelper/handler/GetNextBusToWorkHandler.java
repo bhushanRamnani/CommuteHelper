@@ -27,26 +27,24 @@ import com.ramnani.alexaskills.CommuteHelper.util.AlexaUtils;
 import com.ramnani.alexaskills.CommuteHelper.util.Validator;
 import org.apache.log4j.Logger;
 
-import java.util.Map;
 import java.util.Optional;
 
-public class YesOrNoRequestHandler implements IntentRequestHandler {
+public class GetNextBusToWorkHandler implements IntentRequestHandler {
 
-    private static final Logger log = Logger.getLogger(YesOrNoRequestHandler.class);
+    private static final Logger log = Logger.getLogger(GetNextBusToWorkHandler.class);
 
     private TransitSpeechletManager transitSpeechletManager;
     private UserSetupSpeechletManager userSetupSpeechletManager;
 
-    public YesOrNoRequestHandler(TransitSpeechletManager transitSpeechletManager,
-                                 UserSetupSpeechletManager userSetupSpeechletManager) {
+    public GetNextBusToWorkHandler(TransitSpeechletManager transitSpeechletManager,
+                                   UserSetupSpeechletManager userSetupSpeechletManager) {
         this.transitSpeechletManager = transitSpeechletManager;
         this.userSetupSpeechletManager = userSetupSpeechletManager;
     }
 
     @Override
     public boolean canHandle(HandlerInput input, IntentRequest intentRequest) {
-        return input.matches(Predicates.intentName("YesIntent")
-                .or(Predicates.intentName("NoIntent")));
+        return input.matches(Predicates.intentName("GetNextTransitToWork"));
     }
 
     @Override
@@ -60,20 +58,7 @@ public class YesOrNoRequestHandler implements IntentRequestHandler {
             log.info("Transit user does not exist. Going through user setup: " + AlexaUtils.getUserId(input));
             return userSetupSpeechletManager.handleUserSetup(input, intentRequest.getIntent());
         }
-
-        Map<String, Object> sessionAttributes = input.getAttributesManager().getSessionAttributes();
-
-        if (sessionAttributes.containsKey(TransitSpeechletManager.SUGGESTION_ATTRIBUTE)) {
-            // User is in a Transit Suggestion related session
-            log.info("Handling suggestion.");
-            return transitSpeechletManager
-                    .handleYesNoIntentResponse(input, intentRequest, transitUser.get());
-        } else if (sessionAttributes.containsKey(UserSetupSpeechletManager.SETUP_ATTRIBUTE)) {
-            // User is in a Setup session
-            log.info("Handling address setup");
-            return userSetupSpeechletManager
-                    .handleVerifyPostalAddressRequest(input, intentRequest.getIntent());
-        }
-        return AlexaUtils.getInternalServerErrorResponse(input);
+        return transitSpeechletManager.handleNextTransitRequest(intentRequest.getIntent(),
+                transitUser.get(), input);
     }
 }
