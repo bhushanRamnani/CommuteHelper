@@ -49,9 +49,6 @@ public class GetWorkAddressHandler implements IntentRequestHandler {
         Validator.validateHandlerInput(input);
         Validator.validateIntentRequest(intentRequest);
 
-        String userId = input.getRequestEnvelope().getSession().getUser().getUserId();
-
-        log.info("Getting work address for user id: " + userId);
-        return userSetupSpeechletManager.handleGetWorkAddressRequest(userId, input);
+        return userSetupSpeechletManager.handleGetWorkAddressRequest(input);
     }
 }

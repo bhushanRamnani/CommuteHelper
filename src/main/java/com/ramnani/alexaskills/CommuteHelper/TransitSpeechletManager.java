@@ -100,6 +100,13 @@ public class TransitSpeechletManager {
     public Optional<Response> handleNextTransitRequest(Intent intent,
                                                        TransitUser user,
                                                        HandlerInput handlerInput) {
+        Validator.validateHandlerInput(handlerInput);
+        Validator.validateIntent(intent);
+        Validate.notNull(user);
+
+        log.info("Inside handleNextTransitRequest. Request: " + handlerInput.getRequestEnvelope()
+                + ". Intent: " + intent);
+
         Slot slot = intent.getSlots().get(SLOT_TRANSIT);
         String transitType = slot.getValue();
         String homeAddress = user.getHomeAddress();
@@ -173,6 +180,9 @@ public class TransitSpeechletManager {
         Validator.validateIntentRequest(request);
         Validator.validateHandlerInput(handlerInput);
 
+        log.info("Inside handleGetArrivalTimeRequest. Request: " + handlerInput.getRequestEnvelope()
+                + " Intent: " + request.getIntent());
+
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager()
                 .getSessionAttributes();
         TransitSuggestion suggestion = getCurrentTransitSuggestion(sessionAttributes);
@@ -207,6 +217,12 @@ public class TransitSpeechletManager {
 
     public Optional<Response> handleGetTotalTransitDurationRequest(HandlerInput handlerInput,
                                                                    Intent intent) {
+        Validator.validateIntent(intent);
+        Validator.validateHandlerInput(handlerInput);
+
+        log.info("Inside handleGetTotalTransitDurationRequest. Request: " + handlerInput.getRequestEnvelope()
+                + " Intent: " + intent);
+
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager()
                 .getSessionAttributes();
         TransitSuggestion suggestion = getCurrentTransitSuggestion(sessionAttributes);
@@ -229,6 +245,12 @@ public class TransitSpeechletManager {
 
     public Optional<Response> handleGetDirectionsRequest(HandlerInput handlerInput,
                                                          Intent intent) {
+        Validator.validateIntent(intent);
+        Validator.validateHandlerInput(handlerInput);
+
+        log.info("Inside handleGetDirectionsRequest. Request: " + handlerInput.getRequestEnvelope()
+                + " Intent: " + intent);
+
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager()
                 .getSessionAttributes();
 
@@ -256,6 +278,12 @@ public class TransitSpeechletManager {
 
     public Optional<Response> handleRepeatSuggestionRequest(HandlerInput handlerInput,
                                                             Intent intent) {
+        Validator.validateIntent(intent);
+        Validator.validateHandlerInput(handlerInput);
+
+        log.info("Inside handleRepeatSuggestionRequest. Request: " + handlerInput.getRequestEnvelope()
+                + " Intent: " + intent);
+
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager()
                 .getSessionAttributes();
         String previousResponse = (String) sessionAttributes.get(PREVIOUS_RESPONSE_ATTRIBUTE);
@@ -272,6 +300,12 @@ public class TransitSpeechletManager {
 
     public Optional<Response> handleNextSuggestionRequest(HandlerInput handlerInput,
                                                           Intent intent) {
+        Validator.validateIntent(intent);
+        Validator.validateHandlerInput(handlerInput);
+
+        log.info("Inside handleNextSuggestionRequest. Request: " + handlerInput.getRequestEnvelope()
+                + " Intent: " + intent);
+
         TransitSuggestion suggestion;
 
         try {
@@ -286,6 +320,12 @@ public class TransitSpeechletManager {
 
     public Optional<Response> handlePreviousSuggestionRequest(HandlerInput handlerInput,
                                                               Intent intent) {
+        Validator.validateIntent(intent);
+        Validator.validateHandlerInput(handlerInput);
+
+        log.info("Inside handlePreviousSuggestionRequest. Request: " + handlerInput.getRequestEnvelope()
+                + " Intent: " + intent);
+
         TransitSuggestion suggestion;
 
         try {
@@ -312,6 +352,9 @@ public class TransitSpeechletManager {
                                                         TransitUser user) {
         Validator.validateHandlerInput(handlerInput);
         Validator.validateIntentRequest(request);
+
+        log.info("Inside handleYesNoIntentResponse. Request: " + handlerInput.getRequestEnvelope()
+                + " Intent: " + request.getIntent());
 
         Intent intent = request.getIntent();
         String intentName = intent.getName();

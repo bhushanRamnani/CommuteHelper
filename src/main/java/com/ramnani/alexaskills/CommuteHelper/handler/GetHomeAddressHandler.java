@@ -49,9 +49,6 @@ public class GetHomeAddressHandler implements IntentRequestHandler {
         Validator.validateHandlerInput(input);
         Validator.validateIntentRequest(intentRequest);
 
-        String userId = input.getRequestEnvelope().getSession().getUser().getUserId();
-
-        log.info("Getting home address for user id: " + userId);
-        return userSetupSpeechletManager.handleGetHomeAddressRequest(userId, input);
+        return userSetupSpeechletManager.handleGetHomeAddressRequest(input);
     }
 }

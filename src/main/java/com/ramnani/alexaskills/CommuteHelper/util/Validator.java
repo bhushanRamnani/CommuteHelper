@@ -1,6 +1,7 @@
 package com.ramnani.alexaskills.CommuteHelper.util;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
+import com.amazon.ask.model.Intent;
 import com.amazon.ask.model.IntentRequest;
 import org.apache.commons.lang3.Validate;
 
@@ -11,9 +12,12 @@ public final class Validator {
 
     public static void validateIntentRequest(IntentRequest intentRequest) {
         Validate.notNull(intentRequest, "intentRequest was null.");
-        Validate.notNull(intentRequest.getIntent(), "intentRequest.getIntent() was null.");
-        Validate.notBlank(intentRequest.getIntent().getName(),
-                "intentRequest.getIntent().getName() was blank.");
+        validateIntent(intentRequest.getIntent());
+    }
+
+    public static void validateIntent(Intent intent) {
+        Validate.notNull(intent, "intent was null.");
+        Validate.notBlank(intent.getName(), "intent.getName() name was null");
     }
 
     public static void validateHandlerInput(HandlerInput handlerInput) {

@@ -26,7 +26,6 @@ import com.ramnani.alexaskills.CommuteHelper.util.Validator;
 import org.apache.commons.lang3.Validate;
 import org.apache.log4j.Logger;
 
-import javax.swing.text.html.Option;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,11 +65,15 @@ public class UserSetupSpeechletManager {
     }
 
     public Optional<Response> handleUserSetup(HandlerInput handlerInput, Intent intent) {
+        Validator.validateHandlerInput(handlerInput);
+        Validator.validateIntent(intent);
+
+        log.info("Handling user setup: " + handlerInput.getRequestEnvelope());
+
         Map<String, Object> attributes = handlerInput.getAttributesManager().getSessionAttributes();
-        Validate.notNull(attributes);
 
         if (!attributes.containsKey(SETUP_ATTRIBUTE)) {
-            log.info("Prompting user to setup home address.");
+            log.info("Prompting user to setup home address: " + handlerInput.getRequestEnvelope());
             attributes.put(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS);
             String homeAddressMessage = "In order to give you transit information, " +
                     "I first need your home address, with zip code. For example, you can say, my home address " +
@@ -82,11 +85,14 @@ public class UserSetupSpeechletManager {
                     .withSpeech(homeAddressMessage)
                     .build();
         }
-        log.info("User setup has started");
+        log.info("User setup has started: " + handlerInput.getRequestEnvelope());
         return handleAddressInputResponse(handlerInput, intent);
     }
 
     public Optional<Response> handleUpdateHomeAddressRequest(HandlerInput handlerInput) {
+        Validator.validateHandlerInput(handlerInput);
+        log.info("Handling UpdateHomeAddress request: " + handlerInput.getRequestEnvelope());
+
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
 
         sessionAttributes.put(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS);
@@ -102,6 +108,9 @@ public class UserSetupSpeechletManager {
     }
 
     public Optional<Response> handleUpdateWorkAddressRequest(HandlerInput handlerInput) {
+        Validator.validateHandlerInput(handlerInput);
+        log.info("Handling UpdateWorkAddress request: " + handlerInput.getRequestEnvelope());
+
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
 
         sessionAttributes.put(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS);
@@ -120,41 +129,47 @@ public class UserSetupSpeechletManager {
         Validate.notNull(handlerInput);
         Validate.notNull(intent);
 
+        log.info("Handling UpdatePostalAddress request: " + handlerInput.getRequestEnvelope());
+
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
 
         String setupAttribute = (String) sessionAttributes.get(SETUP_ATTRIBUTE);
         log.info("Setup Attribute on update postal address request: " + setupAttribute);
 
         if (setupAttribute == null) {
+            log.info(SETUP_ATTRIBUTE + " not found in session: " + handlerInput.getRequestEnvelope().getSession());
             return getTryAgainResponse(handlerInput);
         }
 
         if (setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS)) {
+            log.info(SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS + " found in session. Verifying home address response");
             return verifyAddressResponse(intent, handlerInput, HOME_ADDRESS_ATTRIBUTE, "home");
         } else if (setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS)) {
+            log.info(SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS + " found in session. Verifying work address response.");
             return verifyAddressResponse(intent, handlerInput, WORK_ADDRESS_ATTRIBUTE, WORK_KEY);
         }
         return getTryAgainResponse(handlerInput);
     }
 
     public Optional<Response> handleVerifyPostalAddressRequest(HandlerInput handlerInput, Intent intent) {
-        Validate.notNull(handlerInput);
-        Validate.notNull(intent);
+        Validator.validateHandlerInput(handlerInput);
+        Validator.validateIntent(intent);
 
+        log.info("Inside handleVerifyPostalAddressRequest. Request" + handlerInput.getRequestEnvelope());
         String intentName = intent.getName();
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
-
 
         if (intentName.equals(YES_INTENT)) {
             String setupAttribute = (String) sessionAttributes.get(SETUP_ATTRIBUTE);
             User user = handlerInput.getRequestEnvelope().getSession().getUser();
             String userId = user.getUserId();
-            log.info("Update address attribute: " + setupAttribute + ", User: " + userId);
+            log.info(YES_INTENT + " received with setup attribute: " + SETUP_ATTRIBUTE + ". Value: " + setupAttribute);
 
             if (setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS)) {
                 String homeAddressValue = (String) sessionAttributes.get(HOME_ADDRESS_ATTRIBUTE);
 
                 if (homeAddressValue == null) {
+                    log.info(HOME_ADDRESS_ATTRIBUTE + " is null. Asking user to try again.");
                     return getTryAgainResponse(handlerInput);
                 }
                 return updateHomeAddressInDatabaseAndRespond(userId, homeAddressValue, handlerInput);
@@ -162,6 +177,7 @@ public class UserSetupSpeechletManager {
                 String workAddressValue = (String) sessionAttributes.get(WORK_ADDRESS_ATTRIBUTE);
 
                 if (workAddressValue == null) {
+                    log.info(WORK_ADDRESS_ATTRIBUTE + " is null. Asking user to try again.");
                     return getTryAgainResponse(handlerInput);
                 }
                 return updateWorkAddressInDatabaseAndRespond(userId, workAddressValue, handlerInput);
@@ -170,7 +186,13 @@ public class UserSetupSpeechletManager {
         return getNewAskResponse("Ok. Let's try again with the address", "Try again.", handlerInput);
     }
 
-    public Optional<Response> handleGetWorkAddressRequest(String userId, HandlerInput handlerInput) {
+    public Optional<Response> handleGetWorkAddressRequest(HandlerInput handlerInput) {
+        Validator.validateHandlerInput(handlerInput);
+
+        String userId = handlerInput.getRequestEnvelope().getSession().getUser().getUserId();
+
+        log.info("Inside handleGetWorkAddressRequest. Request: " + handlerInput.getRequestEnvelope());
+
         return getAddress(userId, user -> {
             String destinationNotExistMessage = "Sorry, I cannot find your work address." +
                     " To add or update your work address, you can say, change my work address. ";
@@ -192,7 +214,12 @@ public class UserSetupSpeechletManager {
         }, handlerInput);
     }
 
-    public Optional<Response> handleGetHomeAddressRequest(String userId, HandlerInput handlerInput) {
+    public Optional<Response> handleGetHomeAddressRequest(HandlerInput handlerInput) {
+        Validator.validateHandlerInput(handlerInput);
+        log.info("Inside handleGetHomeAddressRequest. Request: " + handlerInput.getRequestEnvelope());
+
+        String userId = handlerInput.getRequestEnvelope().getSession().getUser().getUserId();
+
         return getAddress(userId, user -> {
             String homeNotExistMessage = "Sorry, I cannot find your home address." +
                     " To add or update your home address, you can say, change my work address. ";
@@ -259,14 +286,16 @@ public class UserSetupSpeechletManager {
                                                                      String homeAddress,
                                                                      HandlerInput handlerInput) {
         try {
-            log.info("Updating home address.");
-            TransitUser updatedUser = userStore.updateHomeAddress(userId, homeAddress);
-            log.info("Updated user home address: " + updatedUser.getHomeAddress());
+            log.info("Updating home address for user: " + userId);
+            userStore.updateHomeAddress(userId, homeAddress);
+            log.info("Updated user home address: " + userId);
 
-            log.info("Updating timezone.");
+            log.info("Updating timezone for user: " + userId);
 
             try {
                 String timezone = googleMaps.getTimezoneFromAddress(homeAddress);
+                log.info("User timezone: " + timezone + ". UserId " +  userId);
+
                 userStore.addOrUpdateTimezone(userId, timezone);
             } catch (Exception e1) {
                 log.error("Could not update timezone.", e1);
@@ -284,7 +313,7 @@ public class UserSetupSpeechletManager {
                                                                      HandlerInput handlerInput) {
         try {
             userStore.addOrUpdateDestination(userId, WORK_KEY, workAddress);
-            log.info("Updated user home address: " + workAddress);
+            log.info("Updated user home address for userId: " + userId);
             return getNewTellResponse("OK. I changed your work address.",
                     "Home work changed", handlerInput);
         } catch (Exception ex) {
