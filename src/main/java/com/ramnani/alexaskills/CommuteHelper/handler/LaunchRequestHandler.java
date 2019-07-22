@@ -31,7 +31,7 @@ public class LaunchRequestHandler implements RequestHandler {
 
     @Override
     public Optional<Response> handle(HandlerInput input) {
-        String speechText = "Hi! I'm Transit Helper Gamma Version 2. " +
+        String speechText = "Hi! I'm Transit Helper Gamma on the new SDK Version. " +
                 "I'll be glad to help you with transit information from" +
                 " home to work. For example, you can ask me, " +
                 "\"when's the next bus to work\".";
@@ -39,6 +39,7 @@ public class LaunchRequestHandler implements RequestHandler {
                 .withSpeech(speechText)
                 .withSimpleCard("Transit Helper", speechText)
                 .withReprompt(speechText)
+                .withShouldEndSession(false)
                 .build();
     }
 }

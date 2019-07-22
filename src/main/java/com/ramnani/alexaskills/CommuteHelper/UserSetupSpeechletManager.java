@@ -82,6 +82,8 @@ public class UserSetupSpeechletManager {
 
             return handlerInput.getResponseBuilder()
                     .withSimpleCard(cardTitle, homeAddressMessage)
+                    .withShouldEndSession(false)
+                    .withReprompt(homeAddressMessage)
                     .withSpeech(homeAddressMessage)
                     .build();
         }
@@ -104,6 +106,8 @@ public class UserSetupSpeechletManager {
         return handlerInput.getResponseBuilder()
                 .withSpeech(output)
                 .withSimpleCard("Change Home Address", output)
+                .withReprompt(output)
+                .withShouldEndSession(false)
                 .build();
     }
 
@@ -122,6 +126,8 @@ public class UserSetupSpeechletManager {
         return handlerInput.getResponseBuilder()
                 .withSpeech(output)
                 .withSimpleCard("Change Work Address", output)
+                .withReprompt(output)
+                .withShouldEndSession(false)
                 .build();
     }
 
@@ -437,6 +443,8 @@ public class UserSetupSpeechletManager {
             return handlerInput.getResponseBuilder()
                     .withReprompt(output)
                     .withSpeech(output)
+                    .withReprompt(output)
+                    .withShouldEndSession(false)
                     .withSimpleCard("Try Again.", output)
                     .build();
         }
@@ -448,6 +456,7 @@ public class UserSetupSpeechletManager {
 
         return handlerInput.getResponseBuilder()
                 .withReprompt(output)
+                .withShouldEndSession(false)
                 .withSpeech(output)
                 .withSimpleCard(addressName + " address", output)
                 .build();
@@ -455,8 +464,10 @@ public class UserSetupSpeechletManager {
 
     private Optional<Response> getNewAskResponse(String output, String title, HandlerInput handlerInput) {
         return handlerInput.getResponseBuilder()
+                .withSpeech(output)
                 .withSimpleCard(title, output)
                 .withReprompt(output)
+                .withShouldEndSession(false)
                 .build();
     }
 
@@ -465,14 +476,15 @@ public class UserSetupSpeechletManager {
         return handlerInput.getResponseBuilder()
                 .withSpeech(output)
                 .withReprompt(output)
+                .withShouldEndSession(false)
                 .withSimpleCard("Try Again.", output)
                 .build();
     }
 
     private Optional<Response> getNewTellResponse(String output, String title, HandlerInput handlerInput) {
         return handlerInput.getResponseBuilder()
+                .withSpeech(output)
                 .withSimpleCard(title, output)
-                .withReprompt(output)
                 .withShouldEndSession(true)
                 .build();
     }

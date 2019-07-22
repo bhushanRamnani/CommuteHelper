@@ -65,12 +65,12 @@ public class YesOrNoRequestHandler implements IntentRequestHandler {
 
         if (sessionAttributes.containsKey(TransitSpeechletManager.SUGGESTION_ATTRIBUTE)) {
             // User is in a Transit Suggestion related session
-            log.info("Handling suggestion.");
+            log.info("Handling suggestion for user: " + transitUser.get().getUserId());
             return transitSpeechletManager
                     .handleYesNoIntentResponse(input, intentRequest, transitUser.get());
         } else if (sessionAttributes.containsKey(UserSetupSpeechletManager.SETUP_ATTRIBUTE)) {
             // User is in a Setup session
-            log.info("Handling address setup");
+            log.info("Handling address setup for user: " + transitUser.get().getUserId());
             return userSetupSpeechletManager
                     .handleVerifyPostalAddressRequest(input, intentRequest.getIntent());
         }

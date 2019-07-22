@@ -130,6 +130,7 @@ public class TransitSpeechletManager {
 
             return handlerInput.getResponseBuilder()
                     .withReprompt(output)
+                    .withShouldEndSession(false)
                     .withSpeech(output)
                     .build();
 
@@ -343,6 +344,7 @@ public class TransitSpeechletManager {
 
         return responseBuilder.withSpeech(returnSpeech)
                 .withReprompt(returnSpeech)
+                .withShouldEndSession(false)
                 .withSimpleCard("Try Again", returnSpeech)
                 .build();
     }
@@ -463,6 +465,8 @@ public class TransitSpeechletManager {
         String output = "Sorry. No more transit options available. ";
         return responseBuilder.withSpeech(output)
                 .withSimpleCard("Transit Suggestion", output)
+                .withReprompt(output)
+                .withShouldEndSession(false)
                 .build();
     }
 
@@ -565,6 +569,7 @@ public class TransitSpeechletManager {
                 .withSpeech("<speak>" + stringBuilder.toString()
                         .replace("&", "and") + "</speak>")
                 .withReprompt(repromptQuestion)
+                .withShouldEndSession(false)
                 .withSimpleCard(cardTitle, actualOutput)
                 .build();
     }
