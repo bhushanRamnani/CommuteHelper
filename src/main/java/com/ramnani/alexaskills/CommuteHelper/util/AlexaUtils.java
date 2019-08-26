@@ -2,6 +2,8 @@ package com.ramnani.alexaskills.CommuteHelper.util;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Response;
+import com.amazon.ask.model.services.deviceAddress.Address;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
 import java.util.Optional;
@@ -29,5 +31,30 @@ public final class AlexaUtils {
                 .withSimpleCard("Oops!", ERROR_STRING)
                 .withShouldEndSession(true)
                 .build();
+    }
+
+    public static String generateAddressOutput(Address address) {
+        StringBuilder addressSpeech = new StringBuilder();
+        appendToString(addressSpeech, address.getAddressLine1(), false);
+        appendToString(addressSpeech, address.getAddressLine2(), false);
+        appendToString(addressSpeech, address.getAddressLine3(), false);
+        appendToString(addressSpeech, address.getCity(), false);
+
+        if (!StringUtils.isBlank(address.getPostalCode())) {
+            String postalCode = "<say-as interpret-as=\"cardinal\">" + address.getPostalCode() + "</say-as>";
+            appendToString(addressSpeech, postalCode, false);
+        }
+        appendToString(addressSpeech, address.getCountryCode(), true);
+        return addressSpeech.toString();
+    }
+
+    private static void appendToString(StringBuilder stringBuilder, String addressLine, boolean lastLine) {
+        if (!StringUtils.isBlank(addressLine)) {
+            stringBuilder.append(addressLine);
+
+            if (!lastLine) {
+                stringBuilder.append(", ");
+            }
+        }
     }
 }

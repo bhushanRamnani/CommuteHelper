@@ -19,15 +19,24 @@ import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.model.Intent;
 import com.amazon.ask.model.Response;
 import com.amazon.ask.model.Slot;
-import com.amazon.ask.model.User;
+
+
+import com.amazon.ask.model.services.ServiceException;
+import com.amazon.ask.model.services.deviceAddress.Address;
+import com.amazon.ask.model.services.deviceAddress.DeviceAddressServiceClient;
+
+import com.amazon.ask.model.ui.AskForPermissionsConsentCard;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitHelperDao;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitUser;
+import com.ramnani.alexaskills.CommuteHelper.util.AlexaUtils;
 import com.ramnani.alexaskills.CommuteHelper.util.Validator;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.log4j.Logger;
 
 import java.util.Arrays;
-import java.util.HashMap;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -36,160 +45,214 @@ import java.util.function.Function;
  * This class owns the functionality of setting up user details
  * including home address and work address
  */
-public class UserSetupSpeechletManager {
+public class UserSetupSpeechletManager extends CommuteHelperSpeechletManager {
 
-    public static final String SETUP_ATTRIBUTE = "setupAttribute";
-    private static final String HOME_ADDRESS_ATTRIBUTE = "homeAddress";
-    private static final String WORK_ADDRESS_ATTRIBUTE = "workAddress";
+    public static final String DESTINATION_ATTRIBUTE = "destination";
+    public static final String DESTINATION_VALUE_SETUP_QUESTION_PHASE = "setupQuestionPhase";
+    public static final String DESTINATION_VALUE_SETUP_LOCATION_NAME_PHASE = "locationNamePhase";
+    public static final String DESTINATION_VALUE_SETUP_LOCATION_ADDRESS_PHASE = "locationAddressPhase";
+    public static final String DESTINATION_NAME_ATTRIBUTE = "destinationName";
+    public static final String DESTINATION_ADDRESS_ATTRIBUTE = "destinationAddress";
 
-    private static final String SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS = "homeAddressSetup";
-    private static final String SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS = "workAddressSetup";
+    private static final String ALL_ADDRESS_PERMISSION = "read::alexa:device:all:address";
 
-    private static final String[] ADDRESS_INTENTS = {"PutPostalAddress", "PutStreetAddress"};
     private static final String YES_INTENT = "YesIntent";
     private static final String NO_INTENT = "NoIntent";
-    private static final String ADDRESS_SLOT = "address";
+
+    private static final String LOCATION_NAME_SLOT = "location";
+    private static final String LOCATION_ADDRESS_SLOT = "address";
     private static final String WORK_KEY = "work";
+    private static final String LOCATION_NAME_EXAMPLE_SPEECH =
+            "For Example, you can say, the location name is work or the location name is grocery store.";
+
+    private static final String LOCATION_ADDRESS_EXAMPLE_SPEECH = "For example, you can say,"
+            + " the location address is Nineteen Twenty Sixteenth Avenue,"
+            + " San Francisco, California, Nine Four Zero Four Three";
 
     private static final Logger log = Logger.getLogger(UserSetupSpeechletManager.class);
 
-    private TransitHelperDao userStore;
-    private GoogleMapsService googleMaps;
-
     public UserSetupSpeechletManager(TransitHelperDao userStore, GoogleMapsService googleMaps) {
-        Validate.notNull(userStore);
-        Validate.notNull(googleMaps);
-
-        this.userStore = userStore;
-        this.googleMaps = googleMaps;
+        super(userStore, googleMaps);
     }
 
-    public Optional<Response> handleUserSetup(HandlerInput handlerInput, Intent intent) {
+    public Optional<Response> handleUserSetup(HandlerInput handlerInput) {
         Validator.validateHandlerInput(handlerInput);
-        Validator.validateIntent(intent);
 
         log.info("Handling user setup: " + handlerInput.getRequestEnvelope());
 
-        Map<String, Object> attributes = handlerInput.getAttributesManager().getSessionAttributes();
+        ImmutablePair<Optional<String>, Optional<Response>> updateHomeAddressResponse
+                = super.updateHomeAddressFromDeviceAddress(handlerInput);
 
-        if (!attributes.containsKey(SETUP_ATTRIBUTE)) {
-            log.info("Prompting user to setup home address: " + handlerInput.getRequestEnvelope());
-            attributes.put(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS);
-            String homeAddressMessage = "In order to give you transit information, " +
-                    "I first need your home address, with zip code. For example, you can say, my home address " +
-                    "is, Fifteen Zero Nine Blakeley Street, Seattle, Washington, Nine Eight Three Three Zero.";
-            String cardTitle = "Home Address";
+        Validate.isTrue(updateHomeAddressResponse.getLeft().isPresent()
+                || updateHomeAddressResponse.getRight().isPresent());
 
-            return handlerInput.getResponseBuilder()
-                    .withSimpleCard(cardTitle, homeAddressMessage)
-                    .withShouldEndSession(false)
-                    .withReprompt(homeAddressMessage)
-                    .withSpeech(homeAddressMessage)
-                    .build();
+        if (updateHomeAddressResponse.getRight().isPresent()) {
+            return updateHomeAddressResponse.getRight();
         }
-        log.info("User setup has started: " + handlerInput.getRequestEnvelope());
-        return handleAddressInputResponse(handlerInput, intent);
-    }
 
-    public Optional<Response> handleUpdateHomeAddressRequest(HandlerInput handlerInput) {
-        Validator.validateHandlerInput(handlerInput);
-        log.info("Handling UpdateHomeAddress request: " + handlerInput.getRequestEnvelope());
+        String successSpeech = "You could either add a specific destination by address or directly ask me for"
+                + " transit information if it’s a well-known location."
+                + " Would you like to add a destination by address?";
 
-        Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
-
-        sessionAttributes.put(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS);
-
-        String output = "Ok. If  you'd like to change your home address, tell me your"
-                + " new home address, with zip code. For Example, you can say, my home address is"
-                + " ,Nineteen Twenty Twenty Fourth, San Francisco, California, Nine Four Zero Four Four.";
+        handlerInput.getAttributesManager()
+                .getSessionAttributes().put(DESTINATION_ATTRIBUTE, DESTINATION_VALUE_SETUP_QUESTION_PHASE);
 
         return handlerInput.getResponseBuilder()
-                .withSpeech(output)
-                .withSimpleCard("Change Home Address", output)
-                .withReprompt(output)
-                .withShouldEndSession(false)
+                .withSpeech(successSpeech)
+                .withSimpleCard("Your home address", successSpeech)
+                .withShouldEndSession(true)
                 .build();
     }
 
-    public Optional<Response> handleUpdateWorkAddressRequest(HandlerInput handlerInput) {
-        Validator.validateHandlerInput(handlerInput);
-        log.info("Handling UpdateWorkAddress request: " + handlerInput.getRequestEnvelope());
-
-        Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
-
-        sessionAttributes.put(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS);
-
-        String output = "Ok. If  you'd like to change your work address, tell me your" +
-                        " new work address, with zip code. For Example, you can say, my work address is" +
-                        " ,Nineteen Twenty Sixteenth Avenue, San Francisco, California, Nine Four Zero Four Three.";
-
-        return handlerInput.getResponseBuilder()
-                .withSpeech(output)
-                .withSimpleCard("Change Work Address", output)
-                .withReprompt(output)
-                .withShouldEndSession(false)
-                .build();
-    }
-
-    public Optional<Response> handleUpdatePostalAddressRequest(HandlerInput handlerInput, Intent intent) {
-        Validate.notNull(handlerInput);
-        Validate.notNull(intent);
-
-        log.info("Handling UpdatePostalAddress request: " + handlerInput.getRequestEnvelope());
-
-        Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
-
-        String setupAttribute = (String) sessionAttributes.get(SETUP_ATTRIBUTE);
-        log.info("Setup Attribute on update postal address request: " + setupAttribute);
-
-        if (setupAttribute == null) {
-            log.info(SETUP_ATTRIBUTE + " not found in session: " + handlerInput.getRequestEnvelope().getSession());
-            return getTryAgainResponse(handlerInput);
-        }
-
-        if (setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS)) {
-            log.info(SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS + " found in session. Verifying home address response");
-            return verifyAddressResponse(intent, handlerInput, HOME_ADDRESS_ATTRIBUTE, "home");
-        } else if (setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS)) {
-            log.info(SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS + " found in session. Verifying work address response.");
-            return verifyAddressResponse(intent, handlerInput, WORK_ADDRESS_ATTRIBUTE, WORK_KEY);
-        }
-        return getTryAgainResponse(handlerInput);
-    }
-
-    public Optional<Response> handleVerifyPostalAddressRequest(HandlerInput handlerInput, Intent intent) {
+    public Optional<Response> handlePutLocationAddress(HandlerInput handlerInput, Intent intent) {
         Validator.validateHandlerInput(handlerInput);
         Validator.validateIntent(intent);
 
-        log.info("Inside handleVerifyPostalAddressRequest. Request" + handlerInput.getRequestEnvelope());
-        String intentName = intent.getName();
+        Map<String, Object> session = handlerInput.getAttributesManager().getSessionAttributes();
+
+        if (session.get(DESTINATION_NAME_ATTRIBUTE) == null
+                || StringUtils.isBlank((String) session.get(DESTINATION_NAME_ATTRIBUTE))) {
+            log.warn("Could not find value for the location name atteribute. Request: "
+                    + handlerInput.getRequestEnvelope());
+            return getNewAskResponse("Ok. Please tell me the location name first. "
+                + LOCATION_NAME_EXAMPLE_SPEECH, "Location name", handlerInput);
+        }
+        String locationName = (String) session.get(DESTINATION_NAME_ATTRIBUTE);
+
+        Map<String, Slot> slots = intent.getSlots();
+
+        Optional<Response> tryAgainResponse = getNewAskResponse(
+                "Sorry. I could not understand the location address. Please try again. "
+                        + LOCATION_ADDRESS_EXAMPLE_SPEECH, "Location Address", handlerInput);
+
+        if (slots == null || slots.get(LOCATION_ADDRESS_SLOT) == null) {
+            log.warn("Could not get slot " + LOCATION_ADDRESS_SLOT + " for request: "
+                    + handlerInput.getRequestEnvelope());
+            return tryAgainResponse;
+        }
+        final String addressValue = slots.get(LOCATION_ADDRESS_SLOT).getValue();
+        final String googleResolvedAddress = googleMaps.getAddressOfPlace(addressValue);
+
+        if (StringUtils.isBlank(googleResolvedAddress)) {
+            log.warn("Could not resolve location address from google. Slot address value: "
+                    + addressValue);
+
+            return tryAgainResponse;
+        }
+        session.put(DESTINATION_ADDRESS_ATTRIBUTE, googleResolvedAddress);
+
+        return getNewAskResponse("Ok. I understood the address for " + locationName
+                + " to be " + googleResolvedAddress + ". Is this correct? ",
+                "Location Address", handlerInput);
+    }
+
+    public Optional<Response> handlePutLocationName(HandlerInput handlerInput, Intent intent) {
+        Validator.validateHandlerInput(handlerInput);
+        Validator.validateIntent(intent);
+
+        Map<String, Slot> slots = intent.getSlots();
+
+        Optional<Response> tryAgainResponse = getNewAskResponse(
+                "Sorry, I could not understand the location name. Please"
+                + " tell me again. " + LOCATION_NAME_EXAMPLE_SPEECH, "Location Name", handlerInput);
+
+        if (slots == null || slots.get(LOCATION_NAME_SLOT) == null) {
+            log.warn("slots was null or slot did not have location name: "
+                    + handlerInput.getRequestEnvelope());
+            return tryAgainResponse;
+        }
+        Slot locationSlot = slots.get(LOCATION_NAME_SLOT);
+        String locationSlotValue = locationSlot.getValue();
+
+        if (StringUtils.isBlank(locationSlotValue)) {
+            log.warn("Value of location slot " + LOCATION_NAME_SLOT + " was blank.");
+            return tryAgainResponse;
+        }
+        log.info("Updating " + DESTINATION_NAME_ATTRIBUTE + " to " + locationSlotValue);
+        Map<String, Object> session = handlerInput.getAttributesManager().getSessionAttributes();
+        session.put(DESTINATION_NAME_ATTRIBUTE, locationSlotValue);
+        return getNewAskResponse("Ok. I understood the location name to be "
+                 + locationSlotValue + ". Is this correct ?", "Location Name", handlerInput);
+    }
+
+    public Optional<Response> handleDestinationSetup(HandlerInput handlerInput, Intent intent) {
+        Validator.validateHandlerInput(handlerInput);
+        Validator.validateIntent(intent);
+        Validate.isTrue(intent.getName().equals(YES_INTENT) || intent.getName().equals(NO_INTENT));
+
+        log.info("Handling Destination setup: " + handlerInput.getRequestEnvelope());
+
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
+        String destinationAttributeValue = (String) sessionAttributes.get(DESTINATION_ATTRIBUTE);
 
-        if (intentName.equals(YES_INTENT)) {
-            String setupAttribute = (String) sessionAttributes.get(SETUP_ATTRIBUTE);
-            User user = handlerInput.getRequestEnvelope().getSession().getUser();
-            String userId = user.getUserId();
-            log.info(YES_INTENT + " received with setup attribute: " + SETUP_ATTRIBUTE + ". Value: " + setupAttribute);
+        Validate.notBlank(destinationAttributeValue);
+        Validate.isTrue(
+                Arrays.asList(
+                        DESTINATION_VALUE_SETUP_QUESTION_PHASE,
+                        DESTINATION_VALUE_SETUP_LOCATION_NAME_PHASE,
+                        DESTINATION_VALUE_SETUP_LOCATION_ADDRESS_PHASE
+                ).contains(destinationAttributeValue)
+        );
 
-            if (setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS)) {
-                String homeAddressValue = (String) sessionAttributes.get(HOME_ADDRESS_ATTRIBUTE);
+        if (intent.getName().equals(YES_INTENT)) {
+            if (destinationAttributeValue.equals(DESTINATION_VALUE_SETUP_QUESTION_PHASE)) {
+                // Tell customer to enter destination name
+                sessionAttributes.put(DESTINATION_ATTRIBUTE, DESTINATION_VALUE_SETUP_LOCATION_NAME_PHASE);
 
-                if (homeAddressValue == null) {
-                    log.info(HOME_ADDRESS_ATTRIBUTE + " is null. Asking user to try again.");
-                    return getTryAgainResponse(handlerInput);
-                }
-                return updateHomeAddressInDatabaseAndRespond(userId, homeAddressValue, handlerInput);
-            } else if (setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS)) {
-                String workAddressValue = (String) sessionAttributes.get(WORK_ADDRESS_ATTRIBUTE);
+                return getNewAskResponse("OK. Please give me a name for the location. "
+                                + LOCATION_NAME_EXAMPLE_SPEECH,
+                        "Location Name",
+                        handlerInput);
+            } else if (destinationAttributeValue.equals(DESTINATION_VALUE_SETUP_LOCATION_NAME_PHASE)) {
+                sessionAttributes.put(DESTINATION_ATTRIBUTE, DESTINATION_VALUE_SETUP_LOCATION_ADDRESS_PHASE);
 
-                if (workAddressValue == null) {
-                    log.info(WORK_ADDRESS_ATTRIBUTE + " is null. Asking user to try again.");
-                    return getTryAgainResponse(handlerInput);
-                }
-                return updateWorkAddressInDatabaseAndRespond(userId, workAddressValue, handlerInput);
+                return getNewAskResponse("OK. Please tell me the location address with zip code. "
+                        + LOCATION_ADDRESS_EXAMPLE_SPEECH,
+                        "Location Address",
+                        handlerInput);
+            } else {
+                updateDestinationAddress(handlerInput);
+            }
+        } else {
+            if (destinationAttributeValue.equals(DESTINATION_VALUE_SETUP_QUESTION_PHASE)) {
+                // Ask customer if they want transit information for a well known location
+                // TODO: Figure out a better example for a well-known location
+                sessionAttributes.remove(DESTINATION_ATTRIBUTE);
+                return getNewAskResponse("OK. You can then ask me for transit information to a well-known" +
+                                " place close to where you live. For example, you can ask me when's the next bus" +
+                                " to the nearest train station.",
+                        "Get Transit Information",
+                        handlerInput);
+            } else if (destinationAttributeValue.equals(DESTINATION_VALUE_SETUP_LOCATION_NAME_PHASE)) {
+                // Ask customer to try saying the location name again
+                return getNewAskResponse("OK. Please try again. " + LOCATION_NAME_EXAMPLE_SPEECH,
+                        "Location Name",
+                        handlerInput);
+            } else {
+                // Ask customer to try saying the address again
+                return getNewAskResponse("OK. Please try again. " + LOCATION_ADDRESS_EXAMPLE_SPEECH,
+                        "Location Address",
+                        handlerInput);
             }
         }
-        return getNewAskResponse("Ok. Let's try again with the address", "Try again.", handlerInput);
+        throw new IllegalArgumentException("Unexpected session state for this function: "
+                + handlerInput.getRequestEnvelope());
+    }
+
+    private void updateDestinationAddress(HandlerInput handlerInput) {
+        Map<String, Object> sessionAttributes = handlerInput
+                .getAttributesManager().getSessionAttributes();
+
+        String locationName = (String) sessionAttributes.get(DESTINATION_NAME_ATTRIBUTE);
+        String locationAddress = (String) sessionAttributes.get(DESTINATION_ADDRESS_ATTRIBUTE);
+
+        Validate.notBlank(locationName);
+        Validate.notBlank(locationAddress);
+
+        String userId = handlerInput.getRequestEnvelope().getSession().getUser().getUserId();
+
+        log.info("Adding destination " + locationName + " for userId: " + userId);
+        userStore.addOrUpdateDestination(userId, locationName, locationAddress);
     }
 
     public Optional<Response> handleGetWorkAddressRequest(HandlerInput handlerInput) {
@@ -228,7 +291,7 @@ public class UserSetupSpeechletManager {
 
         return getAddress(userId, user -> {
             String homeNotExistMessage = "Sorry, I cannot find your home address." +
-                    " To add or update your home address, you can say, change my work address. ";
+                    " To add or update your home address, you can say, change my home address. ";
             String homeNotExistTitle = "Home Address not found.";
             String homeAddress = user.getHomeAddress();
 
@@ -312,154 +375,6 @@ public class UserSetupSpeechletManager {
             log.error("Could not update home address: ", ex);
             return getTryAgainResponse(handlerInput);
         }
-    }
-
-    private Optional<Response> updateWorkAddressInDatabaseAndRespond(String userId,
-                                                                     String workAddress,
-                                                                     HandlerInput handlerInput) {
-        try {
-            userStore.addOrUpdateDestination(userId, WORK_KEY, workAddress);
-            log.info("Updated user home address for userId: " + userId);
-            return getNewTellResponse("OK. I changed your work address.",
-                    "Home work changed", handlerInput);
-        } catch (Exception ex) {
-            log.error("Could not update work address: ", ex);
-            return getTryAgainResponse(handlerInput);
-        }
-    }
-
-    /**
-     * Here, we're using a combination of intent name and session attributes to drive
-     * the user setup conversation
-     */
-    private Optional<Response> handleAddressInputResponse(HandlerInput handlerInput,
-                                                          Intent intent) {
-
-        Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
-        String setupAttribute = (String) sessionAttributes.get(SETUP_ATTRIBUTE);
-        String intentName = intent.getName();
-        log.info("Intent Name: " + intentName
-                + "\tSetup Attribute: " + setupAttribute);
-
-        if (Arrays.asList(ADDRESS_INTENTS).contains(intentName) &&
-                setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS))
-        {
-            return verifyAddressResponse(intent, handlerInput,
-                    HOME_ADDRESS_ATTRIBUTE, "home");
-        }
-        else if (intentName.equals(YES_INTENT) &&
-                setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS))
-        {
-            sessionAttributes.put(SETUP_ATTRIBUTE, SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS);
-            return getNewAskResponse("Ok. Now tell me your work address, with zip code. For example, you can say" +
-                    ", my work address is Twenty Four Hundred Martin Street, Seattle, Washington," +
-                            " Nine Eight One One Four",
-                    "Work Address", handlerInput);
-        }
-        else if (intentName.equals(NO_INTENT) &&
-                setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_HOME_ADDRESS))
-        {
-            return getNewAskResponse("Ok. Let's try again with your Home Address.",
-                    "Home Address", handlerInput);
-        }
-        else if (Arrays.asList(ADDRESS_INTENTS).contains(intentName) &&
-                setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS))
-        {
-            return verifyAddressResponse(intent, handlerInput,
-                    WORK_ADDRESS_ATTRIBUTE, WORK_KEY);
-        }
-        else if (intentName.equals(NO_INTENT) &&
-                setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS))
-        {
-            return getNewAskResponse("Ok. Let's try again with your Work Address.",
-                    "Work Address", handlerInput);
-        }
-        else if (intentName.equals(YES_INTENT) &&
-                setupAttribute.equals(SETUP_ATTRIBUTE_VALUE_WORK_ADDRESS))
-        {
-            // Finally the setup process has completed. Let's add the details in the database
-            return addUserToDatabaseAndReturnSuccess(handlerInput);
-        }
-        else
-        {
-            return getTryAgainResponse(handlerInput);
-        }
-    }
-
-    private Optional<Response> addUserToDatabaseAndReturnSuccess(HandlerInput handlerInput) {
-        Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
-
-        String userId = handlerInput.getRequestEnvelope().getSession().getUser().getUserId();
-        String homeAddress = (String) sessionAttributes.get(HOME_ADDRESS_ATTRIBUTE);
-        String workAddress = (String) sessionAttributes.get(WORK_ADDRESS_ATTRIBUTE);
-
-        Map<String, String> destinations = new HashMap<>();
-        destinations.put(WORK_KEY, workAddress);
-        TransitUser user = null;
-        String timeZone = null;
-
-        try {
-            timeZone = googleMaps.getTimezoneFromAddress(homeAddress);
-        } catch (Exception ex) {
-            log.error("Unable to obtain time zone from google maps API.", ex);
-        }
-
-        try {
-            log.info("Attempting to insert user: " + userId);
-            user = userStore.upsertUser(userId, homeAddress, destinations, timeZone);
-            log.info("Inserted user: " + user);
-        } catch (Exception ex) {
-            log.error("Could not insert user into the TransitUsers table.", ex);
-            return getNewAskResponse("Sorry. I'm having some issues entering your details. Please try again. ",
-                    "Try again. ", handlerInput);
-
-        }
-        log.info("User setup successful. User: " + user);
-        return getNewAskResponse("OK. I have everything I need. Now I can help you with " +
-                        "transit information. For example, you can ask me, \'When\'s my next bus to work.\'",
-                "User Setup completed.", handlerInput);
-    }
-
-    /**
-     * Verify from the user whether the address is correctly understood
-     */
-    private Optional<Response> verifyAddressResponse(Intent intent,
-                                                     HandlerInput handlerInput,
-                                                     String attribute,
-                                                     String addressName) {
-        Map<String, Slot> slots = intent.getSlots();
-        Validate.notNull(slots);
-
-        Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
-
-        Slot slot = slots.get(ADDRESS_SLOT);
-        String addressValue = slot.getValue();
-        log.info("Setting address: " + addressValue);
-
-        String resolvedAddress = googleMaps.getAddressOfPlace(addressValue);
-        String output = "Sorry. I could not find this address. Please try again. ";
-
-        if (resolvedAddress == null || resolvedAddress.isEmpty()) {
-            return handlerInput.getResponseBuilder()
-                    .withReprompt(output)
-                    .withSpeech(output)
-                    .withReprompt(output)
-                    .withShouldEndSession(false)
-                    .withSimpleCard("Try Again.", output)
-                    .build();
-        }
-        log.info("Understood address from user to be: " + resolvedAddress);
-        sessionAttributes.put(attribute, resolvedAddress);
-
-        output = "Ok. I understood your " + addressName
-                + " address to be, " + resolvedAddress + ". Is this correct?";
-
-        return handlerInput.getResponseBuilder()
-                .withReprompt(output)
-                .withShouldEndSession(false)
-                .withSpeech(output)
-                .withSimpleCard(addressName + " address", output)
-                .build();
     }
 
     private Optional<Response> getNewAskResponse(String output, String title, HandlerInput handlerInput) {

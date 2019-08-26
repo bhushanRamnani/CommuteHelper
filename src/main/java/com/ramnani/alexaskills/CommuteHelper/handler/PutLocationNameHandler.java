@@ -17,28 +17,32 @@ package com.ramnani.alexaskills.CommuteHelper.handler;
 
 import com.amazon.ask.dispatcher.request.handler.HandlerInput;
 import com.amazon.ask.dispatcher.request.handler.impl.IntentRequestHandler;
+import com.amazon.ask.model.Intent;
 import com.amazon.ask.model.IntentRequest;
 import com.amazon.ask.model.Response;
+import com.amazon.ask.model.Slot;
 import com.amazon.ask.request.Predicates;
 import com.ramnani.alexaskills.CommuteHelper.UserSetupSpeechletManager;
 import com.ramnani.alexaskills.CommuteHelper.util.Validator;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
+import java.util.Map;
 import java.util.Optional;
 
-public class PutPostalAddressHandler implements IntentRequestHandler {
+public class PutLocationNameHandler implements IntentRequestHandler {
 
-    private static final Logger log = Logger.getLogger(PutPostalAddressHandler.class);
+    private static final Logger log = Logger.getLogger(PutLocationNameHandler.class);
 
     private UserSetupSpeechletManager userSetupSpeechletManager;
 
-    public PutPostalAddressHandler(UserSetupSpeechletManager userSetupSpeechletManager) {
+    public PutLocationNameHandler(UserSetupSpeechletManager userSetupSpeechletManager) {
         this.userSetupSpeechletManager = userSetupSpeechletManager;
     }
 
     @Override
     public boolean canHandle(HandlerInput input, IntentRequest intentRequest) {
-        return input.matches(Predicates.intentName("PutPostalAddress"));
+        return input.matches(Predicates.intentName("PutLocationName"));
     }
 
     @Override
@@ -46,6 +50,6 @@ public class PutPostalAddressHandler implements IntentRequestHandler {
         Validator.validateHandlerInput(input);
         Validator.validateIntentRequest(intentRequest);
 
-        return userSetupSpeechletManager.handlePutLocationAddress(input, intentRequest.getIntent());
+        return userSetupSpeechletManager.handlePutLocationName(input, intentRequest.getIntent());
     }
 }

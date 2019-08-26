@@ -1,11 +1,15 @@
 {
 	"intents":[
 		{
-			"intent": "GetNextTransitToWork",
+			"intent": "GetNextTransitToLocation",
 			"slots": [
 				{
-					"name":"transit",
+					"name": "transit",
 					"type": "TRANSIT_TYPE"
+				},
+				{
+					"name": "location",
+					"type": "Amazon.SearchQuery"
 				}
 			]
 		},
@@ -19,10 +23,19 @@
 			]
 		},
 		{
+			"intent": "PutLocationName",
+			"slots": [
+				{
+					"name":"location",
+					"type": "Amazon.SearchQuery"
+				}
+			]
+		},
+		{
 			"intent": "UpdateHomeAddress"
 		},
 		{
-			"intent": "UpdateWorkAddress"
+			"intent": "AddOrUpdateLocation"
 		},
 		{
 			"intent": "YesIntent"
@@ -43,7 +56,13 @@
 			"intent": "GetHomeAddress"
 		},
 		{
-			"intent": "GetWorkAddress"
+			"intent": "GetLocationAddress",
+			"slots" : [
+				{
+					"name": "location",
+					"type": "Amazon.SearchQuery"
+				}
+			]
 		},
 		{
 			"intent": "AMAZON.PreviousIntent"

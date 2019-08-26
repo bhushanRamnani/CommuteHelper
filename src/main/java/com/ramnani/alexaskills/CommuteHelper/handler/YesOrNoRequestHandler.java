@@ -58,7 +58,7 @@ public class YesOrNoRequestHandler implements IntentRequestHandler {
 
         if (!transitUser.isPresent()) {
             log.info("Transit user does not exist. Going through user setup: " + AlexaUtils.getUserId(input));
-            return userSetupSpeechletManager.handleUserSetup(input, intentRequest.getIntent());
+            return userSetupSpeechletManager.handleUserSetup(input);
         }
 
         Map<String, Object> sessionAttributes = input.getAttributesManager().getSessionAttributes();
@@ -68,11 +68,11 @@ public class YesOrNoRequestHandler implements IntentRequestHandler {
             log.info("Handling suggestion for user: " + transitUser.get().getUserId());
             return transitSpeechletManager
                     .handleYesNoIntentResponse(input, intentRequest, transitUser.get());
-        } else if (sessionAttributes.containsKey(UserSetupSpeechletManager.SETUP_ATTRIBUTE)) {
+        } else if (sessionAttributes.containsKey(UserSetupSpeechletManager.DESTINATION_ATTRIBUTE)) {
             // User is in a Setup session
-            log.info("Handling address setup for user: " + transitUser.get().getUserId());
+            log.info("Handling destination setup for user: " + transitUser.get().getUserId());
             return userSetupSpeechletManager
-                    .handleVerifyPostalAddressRequest(input, intentRequest.getIntent());
+                    .handleDestinationSetup(input, intentRequest.getIntent());
         }
         return AlexaUtils.getInternalServerErrorResponse(input);
     }

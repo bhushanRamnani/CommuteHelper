@@ -1,16 +1,10 @@
-GetNextTransitToWork when's the next {transit} to work
-GetNextTransitToWork when is the next {transit} to work
-GetNextTransitToWork when is my next {transit} to work
-GetNextTransitToWork next {transit} to work
-GetNextTransitToWork {transit} to work
-GetNextTransitToWork what time is my next {transit} to work
-GetNextTransitToWork next {transit} to work
-GetNextTransitToWork when's the next {transit}
-GetNextTransitToWork when is the next {transit}
-GetNextTransitToWork next {transit}
-GetNextTransitToWork what time is my next {transit}
-GetNextTransitToWork next {transit}
-GetNextTransitToWork when is my next {transit}
+GetNextTransitToLocation when's the next {transit} to {location}
+GetNextTransitToWork when is the next {transit} to {location}
+GetNextTransitToWork when is my next {transit} to {location}
+GetNextTransitToWork next {transit} to {location}
+GetNextTransitToWork {transit} to {location}
+GetNextTransitToWork what time is my next {transit} to {location}
+GetNextTransitToWork next {transit} to {location}
 
 YesIntent Yes
 YesIntent Yea
@@ -70,15 +64,15 @@ GetHomeAddress get home address
 GetHomeAddress get my home address
 GetHomeAddress get home address
 
-GetWorkAddress give me my work address
-GetWorkAddress tell me my work address
-GetWorkAddress what's my work address
-GetWorkAddress what is my work address
-GetWorkAddress can I have my work address
-GetWorkAddress can I have my work address please
-GetWorkAddress get work address
-GetWorkAddress get my work address
-GetWorkAddress get work address
+GetLocationAddress give me my {location} address
+GetLocationAddress tell me my {location} address
+GetLocationAddress what's my {location} address
+GetLocationAddress what is my {location} address
+GetLocationAddress can I have my {location} address
+GetLocationAddress can I have my {location} address please
+GetLocationAddress get {location} address
+GetLocationAddress get my {location} address
+GetLocationAddress get {location} address
 
 PutPostalAddress my address is {address}
 PutPostalAddress address is {address}
@@ -86,10 +80,13 @@ PutPostalAddress address {address}
 PutPostalAddress work address {address}
 PutPostalAddress home address {address}
 PutPostalAddress my work address is {address}
-PutPostalAddress my home address is {address}
 PutPostalAddress office address {address}
 PutPostalAddress school address address {address}
 PutPostalAddress {address}
+
+PutLocationName the name of the location is {location}
+PutLocationName the location name is {location}
+PutLocationName {location} is the location name
 
 UpdateHomeAddress change my home address
 UpdateHomeAddress update my home address
@@ -98,12 +95,22 @@ UpdateHomeAddress update home address
 UpdateHomeAddress change home address
 UpdateHomeAddress alter home address
 
-UpdateWorkAddress change my work address
-UpdateWorkAddress update my work address
-UpdateWorkAddress alter my work address
-UpdateWorkAddress update work address
-UpdateWorkAddress change work address
-UpdateWorkAddress alter work address
+PutLocation add a new location
+PutLocation add location
+PutLocation add a new destination
+PutLocation add a destination
+PutLocation update a location
+PutLocation update an existing location
+PutLocation update a destination
+PutLocation update an existing destination
+PutLocation change a location
+PutLocation change an existing location
+PutLocation change a destination
+PutLocation change an existing destination
+PutLocation alter a location
+PutLocation alter an existing location
+PutLocation alter a destination
+PutLocation alter an existing destination
 
 AMAZON.RepeatIntent repeat
 AMAZON.RepeatIntent repeat option

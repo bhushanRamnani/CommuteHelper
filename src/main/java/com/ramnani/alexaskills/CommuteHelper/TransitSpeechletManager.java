@@ -23,10 +23,12 @@ import com.amazon.ask.model.Response;
 import com.amazon.ask.model.Slot;
 import com.amazon.ask.response.ResponseBuilder;
 import com.google.maps.model.Duration;
+import com.ramnani.alexaskills.CommuteHelper.Storage.TransitHelperDao;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitUser;
 import com.ramnani.alexaskills.CommuteHelper.util.Validator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
@@ -48,12 +50,12 @@ import java.util.Random;
  * This speechlet manager is responsible for speech responses to user
  * questions related to transit suggestions.
  */
-public class TransitSpeechletManager {
+public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
     private static final Logger log = Logger.getLogger(TransitSpeechletManager.class);
 
-    private static final String WORK_KEY = "work";
-
     private static final String SLOT_TRANSIT = "transit";
+
+    private static final String SLOT_LOCATION = "location";
 
     public static final String SUGGESTION_ATTRIBUTE = "suggestion";
 
@@ -78,11 +80,9 @@ public class TransitSpeechletManager {
 
     private ObjectMapper mapper = new ObjectMapper();
 
-    private GoogleMapsService googleMapsService;
+    public TransitSpeechletManager(TransitHelperDao userStore, GoogleMapsService googleMapsService) {
+        super(userStore, googleMapsService);
 
-    public TransitSpeechletManager(GoogleMapsService googleMapsService) {
-        Validate.notNull(googleMapsService);
-        this.googleMapsService = googleMapsService;
 
         REPROMPT_QUESTIONS = new HashMap<>();
         REPROMPT_QUESTIONS.put("GetArrivalTime",
@@ -107,21 +107,12 @@ public class TransitSpeechletManager {
         log.info("Inside handleNextTransitRequest. Request: " + handlerInput.getRequestEnvelope()
                 + ". Intent: " + intent);
 
-        Slot slot = intent.getSlots().get(SLOT_TRANSIT);
-        String transitType = slot.getValue();
+        String transitType = intent.getSlots().get(SLOT_TRANSIT).getValue();
+        String location = intent.getSlots().get(SLOT_LOCATION).getValue();
         String homeAddress = user.getHomeAddress();
         String requestId = handlerInput.getRequest().getRequestId();
         Map<String, Object> sessionAttributes =
                 handlerInput.getAttributesManager().getSessionAttributes();
-
-        if (homeAddress == null || homeAddress.isEmpty()) {
-            log.error("Sorry. Home Address does not exist for user: " + user.getUserId());
-
-            return handlerInput.getResponseBuilder()
-                    .withSpeech("Home Address does not exist.")
-                    .withShouldEndSession(true)
-                    .build();
-        }
 
         if (StringUtils.isBlank(transitType)) {
             log.info("Transit type not provided with session: " + requestId);
@@ -135,21 +126,69 @@ public class TransitSpeechletManager {
                     .build();
 
         }
-        Map<String, String> destinations = user.getDestinations();
-        log.info("Destinations : " + destinations.toString() + ". User: " + user.getUserId());
 
-        if (destinations == null || !destinations.containsKey(WORK_KEY)) {
-            log.error("Sorry. Work address does not exist for user: " + user.getUserId());
+        Map<String, String> destinations = user.getDestinations();
+        log.info("Destinations : " + destinations + ". User: " + user.getUserId());
+
+        String exampleLocation = "museum";
+
+        if (destinations != null && !destinations.isEmpty()) {
+            exampleLocation = destinations.values().stream().findFirst().get();
+        }
+        log.info("Example Location for user: " + user + ". Example Location: " + exampleLocation);
+
+        if (StringUtils.isBlank(location)) {
+            log.info("Location not provided with session: " + requestId);
+            String output = "Sorry. I did not understand the location name. Please specify the name of"
+                    + " one of the saved locations or a well-known location nearby. For example you can ask, "
+                    + " When's the next bus to " + exampleLocation + "?";
 
             return handlerInput.getResponseBuilder()
-                    .withSpeech("Work address does not exist")
-                    .withShouldEndSession(true)
+                    .withReprompt(output)
+                    .withShouldEndSession(false)
+                    .withSpeech(output)
+                    .build();
+
+        }
+
+        if (StringUtils.isBlank(homeAddress)) {
+            log.error("Home Address does not exist for user: " + user.getUserId());
+            log.info("Trying to get home address from device settings.");
+
+            ImmutablePair<Optional<String>, Optional<Response>> deviceAddressResponse =
+                    updateHomeAddressFromDeviceAddress(handlerInput);
+
+            Validate.isTrue(deviceAddressResponse.getLeft().isPresent()
+                    || deviceAddressResponse.getRight().isPresent());
+
+            if (deviceAddressResponse.getRight().isPresent()) {
+                return deviceAddressResponse.getRight();
+            }
+            homeAddress = deviceAddressResponse.getLeft().get();
+        }
+        String finalDestinationAddress = null;
+
+        if (destinations != null && destinations.containsKey(location)) {
+            finalDestinationAddress = destinations.get(location);
+        } else {
+            finalDestinationAddress = googleMaps.getAddressOfPlace(location);
+        }
+
+        if (StringUtils.isBlank(finalDestinationAddress)) {
+            log.error("Destination address does not exist for user: " + user.getUserId()
+                    + ". Location: " + location);
+
+            return handlerInput.getResponseBuilder()
+                    .withSpeech("Sorry I did not get a valid address for location: " + location
+                            + ". Please try a different location.")
+                    .withShouldEndSession(false)
                     .build();
         }
-        String workAddress = destinations.get(WORK_KEY);
+        log.info("Getting transit suggestion for user: " + user + ". Destination Address: "
+                + finalDestinationAddress + ". Location: " + location);
 
-        List<TransitSuggestion> suggestions = googleMapsService
-                        .getNextTransitToDestination(transitType, homeAddress, workAddress);
+        List<TransitSuggestion> suggestions = googleMaps
+                        .getNextTransitToDestination(transitType, homeAddress, finalDestinationAddress);
 
         if (suggestions == null || suggestions.size() == 0) {
             log.warn("No Suggestions for user: " + user.getUserId());

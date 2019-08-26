@@ -22,7 +22,7 @@ import com.ramnani.alexaskills.CommuteHelper.Storage.TransitHelperDao;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetArrivalTimeHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetDirectionsHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetHomeAddressHandler;
-import com.ramnani.alexaskills.CommuteHelper.handler.GetNextBusToWorkHandler;
+import com.ramnani.alexaskills.CommuteHelper.handler.GetNextTransitToLocationHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetTransitDurationHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetWorkAddressHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.HelpIntentHandler;
@@ -67,7 +67,7 @@ public class CommuteHelperStreamHandler extends SkillStreamHandler {
                         new GetArrivalTimeHandler(transitSpeechletManager, userSetupSpeechletManager),
                         new GetDirectionsHandler(transitSpeechletManager),
                         new GetHomeAddressHandler(userSetupSpeechletManager),
-                        new GetNextBusToWorkHandler(transitSpeechletManager, userSetupSpeechletManager),
+                        new GetNextTransitToLocationHandler(transitSpeechletManager, userSetupSpeechletManager),
                         new GetTransitDurationHandler(transitSpeechletManager, userSetupSpeechletManager),
                         new GetWorkAddressHandler(userSetupSpeechletManager),
                         new NextSuggestionHandler(transitSpeechletManager),
