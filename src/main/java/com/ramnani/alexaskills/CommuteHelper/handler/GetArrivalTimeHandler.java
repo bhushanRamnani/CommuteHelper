@@ -56,7 +56,7 @@ public class GetArrivalTimeHandler implements IntentRequestHandler {
 
         if (!transitUser.isPresent()) {
             log.info("Transit user does not exist. Going through user setup: " + AlexaUtils.getUserId(input));
-            return userSetupSpeechletManager.handleUserSetup(input, intentRequest.getIntent());
+            return userSetupSpeechletManager.handleUserSetup(input);
         }
         return transitSpeechletManager.handleGetArrivalTimeRequest(intentRequest, input, transitUser.get());
     }

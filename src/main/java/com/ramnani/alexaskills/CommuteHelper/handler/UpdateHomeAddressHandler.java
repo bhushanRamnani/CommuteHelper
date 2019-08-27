@@ -26,6 +26,7 @@ import com.ramnani.alexaskills.CommuteHelper.UserSetupSpeechletManager;
 import com.ramnani.alexaskills.CommuteHelper.util.AlexaUtils;
 import com.ramnani.alexaskills.CommuteHelper.util.Validator;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.log4j.Logger;
 
 import java.util.Optional;
@@ -54,6 +55,18 @@ public class UpdateHomeAddressHandler implements IntentRequestHandler {
 
         input.getAttributesManager().getSessionAttributes().clear();
 
-        return userSetupSpeechletManager.handleUpdateHomeAddressRequest(input);
+        ImmutablePair<Optional<String>, Optional<Response>> updateDeviceAddressResponse =
+                userSetupSpeechletManager.updateHomeAddressFromDeviceAddress(input);
+
+        if (updateDeviceAddressResponse.getRight().isPresent()) {
+            return updateDeviceAddressResponse.getRight();
+        }
+        String homeAddress = updateDeviceAddressResponse.getLeft().get();
+
+        return input.getResponseBuilder()
+                .withSpeech("Ok. Updated home address to " + homeAddress)
+                .withSimpleCard("Home address  updated", homeAddress)
+                .withShouldEndSession(false)
+                .build();
     }
 }

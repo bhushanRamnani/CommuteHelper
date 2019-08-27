@@ -24,17 +24,16 @@ import com.ramnani.alexaskills.CommuteHelper.handler.GetDirectionsHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetHomeAddressHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetNextTransitToLocationHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetTransitDurationHandler;
-import com.ramnani.alexaskills.CommuteHelper.handler.GetWorkAddressHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.HelpIntentHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.LaunchRequestHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.NextSuggestionHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.PreviousSuggestionHandler;
+import com.ramnani.alexaskills.CommuteHelper.handler.PutLocationNameHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.PutPostalAddressHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.RepeatSuggestionHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.StandardExceptionHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.StopOrCancelHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.UpdateHomeAddressHandler;
-import com.ramnani.alexaskills.CommuteHelper.handler.UpdateWorkAddressHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.YesOrNoRequestHandler;
 import org.apache.commons.lang3.Validate;
 import org.springframework.context.ApplicationContext;
@@ -53,7 +52,7 @@ public class CommuteHelperStreamHandler extends SkillStreamHandler {
         googleMapsService = (GoogleMapsService) appContext.getBean("googleMapsService");
         transitHelperDao = (TransitHelperDao) appContext.getBean("transitHelperDao");
 
-        transitSpeechletManager = new TransitSpeechletManager(googleMapsService);
+        transitSpeechletManager = new TransitSpeechletManager(transitHelperDao, googleMapsService);
         userSetupSpeechletManager = new UserSetupSpeechletManager(transitHelperDao, googleMapsService);
 
         Validate.notNull(googleMapsService);
@@ -69,13 +68,12 @@ public class CommuteHelperStreamHandler extends SkillStreamHandler {
                         new GetHomeAddressHandler(userSetupSpeechletManager),
                         new GetNextTransitToLocationHandler(transitSpeechletManager, userSetupSpeechletManager),
                         new GetTransitDurationHandler(transitSpeechletManager, userSetupSpeechletManager),
-                        new GetWorkAddressHandler(userSetupSpeechletManager),
                         new NextSuggestionHandler(transitSpeechletManager),
                         new PreviousSuggestionHandler(transitSpeechletManager),
                         new RepeatSuggestionHandler(transitSpeechletManager),
                         new PutPostalAddressHandler(userSetupSpeechletManager),
                         new UpdateHomeAddressHandler(userSetupSpeechletManager),
-                        new UpdateWorkAddressHandler(userSetupSpeechletManager),
+                        new PutLocationNameHandler(userSetupSpeechletManager),
                         new YesOrNoRequestHandler(transitSpeechletManager, userSetupSpeechletManager))
                 .addExceptionHandler(new StandardExceptionHandler())
                 .withSkillId("amzn1.ask.skill.87670333-a7fa-45d5-afbe-0a6030917bd8")

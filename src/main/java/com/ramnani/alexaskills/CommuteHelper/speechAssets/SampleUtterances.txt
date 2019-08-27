@@ -87,6 +87,9 @@ PutPostalAddress {address}
 PutLocationName the name of the location is {location}
 PutLocationName the location name is {location}
 PutLocationName {location} is the location name
+PutLocationName the name of the destination is {location}
+PutLocationName the destination name is {location}
+PutLocationName {location} is the destination name
 
 UpdateHomeAddress change my home address
 UpdateHomeAddress update my home address

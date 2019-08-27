@@ -117,7 +117,7 @@ public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
         if (StringUtils.isBlank(transitType)) {
             log.info("Transit type not provided with session: " + requestId);
             String output = "Please specify your preferred mode of transport. For example, you can ask,"
-                    + " When's the next bus to work ?";
+                    + " When's the next bus to work?";
 
             return handlerInput.getResponseBuilder()
                     .withReprompt(output)
@@ -130,7 +130,7 @@ public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
         Map<String, String> destinations = user.getDestinations();
         log.info("Destinations : " + destinations + ". User: " + user.getUserId());
 
-        String exampleLocation = "museum";
+        String exampleLocation = "the museum";
 
         if (destinations != null && !destinations.isEmpty()) {
             exampleLocation = destinations.values().stream().findFirst().get();
@@ -140,7 +140,7 @@ public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
         if (StringUtils.isBlank(location)) {
             log.info("Location not provided with session: " + requestId);
             String output = "Sorry. I did not understand the location name. Please specify the name of"
-                    + " one of the saved locations or a well-known location nearby. For example you can ask, "
+                    + " one of the saved locations or a well-known nearby location. For example you can ask, "
                     + " When's the next bus to " + exampleLocation + "?";
 
             return handlerInput.getResponseBuilder()
@@ -171,7 +171,7 @@ public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
         if (destinations != null && destinations.containsKey(location)) {
             finalDestinationAddress = destinations.get(location);
         } else {
-            finalDestinationAddress = googleMaps.getAddressOfPlace(location);
+            finalDestinationAddress = googleMaps.getNearbyPlaceAddress(location, homeAddress);
         }
 
         if (StringUtils.isBlank(finalDestinationAddress)) {

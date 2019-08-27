@@ -54,8 +54,6 @@ public class UserSetupSpeechletManager extends CommuteHelperSpeechletManager {
     public static final String DESTINATION_NAME_ATTRIBUTE = "destinationName";
     public static final String DESTINATION_ADDRESS_ATTRIBUTE = "destinationAddress";
 
-    private static final String ALL_ADDRESS_PERMISSION = "read::alexa:device:all:address";
-
     private static final String YES_INTENT = "YesIntent";
     private static final String NO_INTENT = "NoIntent";
 

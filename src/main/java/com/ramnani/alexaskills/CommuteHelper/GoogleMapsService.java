@@ -33,6 +33,7 @@ import com.google.maps.model.LatLng;
 import com.google.maps.model.PlacesSearchResponse;
 import com.google.maps.model.PlacesSearchResult;
 import com.google.maps.model.TravelMode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.joda.time.DateTime;
 import org.joda.time.Instant;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,18 +53,51 @@ public class GoogleMapsService {
     private static final Logger log = LoggerFactory.getLogger(GoogleMapsService.class);
     private GeoApiContext geoApiContext;
     private static final String[] GENERIC_TRANSIT_TYPES = { "commute", "transit" };
+    private static final int MAX_RADIUS_METERS = 50000;
 
     public GoogleMapsService(String apiKey) {
         geoApiContext = new GeoApiContext();
         geoApiContext.setApiKey(apiKey);
     }
 
+    public String getNearbyPlaceAddress(String placeName, String nearbyAddress) {
+        Validate.notBlank(placeName, "placeName cannot be blank");
+        Validate.notBlank(nearbyAddress, "nearbyAddress cannot be blank");
+
+        PlacesSearchResult centerPlace = getPlace(nearbyAddress, Optional.empty());
+        PlacesSearchResult outputPlace = null;
+
+        if (centerPlace != null && centerPlace.geometry != null
+                && centerPlace.geometry.location != null) {
+            outputPlace = getPlace(placeName, Optional.of(centerPlace.geometry.location));
+        } else {
+            outputPlace = getPlace(placeName, Optional.empty());
+        }
+
+        if (outputPlace == null || StringUtils.isBlank(outputPlace.formattedAddress)) {
+            log.warn("Did not find any place nearby with name: "
+                    + placeName + " and nearby address: " + nearbyAddress);
+            return null;
+        }
+        return outputPlace.formattedAddress;
+    }
+
     public String getAddressOfPlace(String placeName) {
+        PlacesSearchResult place = getPlace(placeName, Optional.empty());
+        return place.formattedAddress;
+    }
+
+    private PlacesSearchResult getPlace(String placeName, Optional<LatLng> center) {
         if (placeName == null || placeName.isEmpty()) {
             log.warn("placeName is null or empty.");
             return null;
         }
         TextSearchRequest request = PlacesApi.textSearchQuery(geoApiContext, placeName);
+
+        if (center.isPresent()) {
+            request.location(center.get());
+            request.radius(MAX_RADIUS_METERS);
+        }
         PlacesSearchResponse response = request.awaitIgnoreError();
 
         if (response == null) {
@@ -82,7 +117,7 @@ public class GoogleMapsService {
             log.warn("No place returned as part of response result. Place: " + placeName
                     + ". Response: " + response.toString());
         }
-        return place.formattedAddress;
+        return place;
     }
 
     public String getTimezoneFromAddress(String address) {
