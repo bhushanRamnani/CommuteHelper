@@ -77,6 +77,11 @@ public class TransitSuggestion {
     private String transitId;
 
     /**
+     * Name of the destination location
+     */
+    private String locationName;
+
+    /**
      * If there is a switch to a different transit.
      * eg. This will be 0 if there's only one transit switch.
      */
@@ -229,5 +234,13 @@ public class TransitSuggestion {
 
     public void setNumOfSwitches(int numOfSwitches) {
         this.numOfSwitches = numOfSwitches;
+    }
+
+    public String getLocationName() {
+        return locationName;
+    }
+
+    public void setLocationName(String locationName) {
+        this.locationName = locationName;
     }
 }

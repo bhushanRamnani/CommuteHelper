@@ -25,26 +25,30 @@ import com.ramnani.alexaskills.CommuteHelper.TransitSpeechletManager;
 import com.ramnani.alexaskills.CommuteHelper.UserSetupSpeechletManager;
 import com.ramnani.alexaskills.CommuteHelper.util.AlexaUtils;
 import com.ramnani.alexaskills.CommuteHelper.util.Validator;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 
+import java.util.Map;
 import java.util.Optional;
 
-public class GetNextTransitToLocationHandler implements IntentRequestHandler {
+public class GetNextTransitHandler implements IntentRequestHandler {
 
-    private static final Logger log = Logger.getLogger(GetNextTransitToLocationHandler.class);
+    private static final Logger log = Logger.getLogger(GetNextTransitHandler.class);
+
+    private static final String SLOT_TRANSIT = "transit";
 
     private TransitSpeechletManager transitSpeechletManager;
     private UserSetupSpeechletManager userSetupSpeechletManager;
 
-    public GetNextTransitToLocationHandler(TransitSpeechletManager transitSpeechletManager,
-                                           UserSetupSpeechletManager userSetupSpeechletManager) {
+    public GetNextTransitHandler(TransitSpeechletManager transitSpeechletManager,
+                                 UserSetupSpeechletManager userSetupSpeechletManager) {
         this.transitSpeechletManager = transitSpeechletManager;
         this.userSetupSpeechletManager = userSetupSpeechletManager;
     }
 
     @Override
     public boolean canHandle(HandlerInput input, IntentRequest intentRequest) {
-        return input.matches(Predicates.intentName("GetNextTransitToLocation"));
+        return input.matches(Predicates.intentName("GetNextTransit"));
     }
 
     @Override
@@ -54,11 +58,26 @@ public class GetNextTransitToLocationHandler implements IntentRequestHandler {
 
         Optional<TransitUser> transitUser = userSetupSpeechletManager.getTransitUser(input);
 
+        Map<String, Object> session = input.getAttributesManager().getSessionAttributes();
+
         if (!transitUser.isPresent()) {
             log.info("Transit user does not exist. Going through user setup: " + AlexaUtils.getUserId(input));
             return userSetupSpeechletManager.handleUserSetup(input);
         }
-        return transitSpeechletManager.handleNextTransitRequest(intentRequest.getIntent(),
-                transitUser.get(), input);
+        String transitType = intentRequest.getIntent().getSlots().get(SLOT_TRANSIT).getValue();
+
+        if (session.containsKey(TransitSpeechletManager.SUGGESTION_QUERY_LOCATION)) {
+            String locationValue = (String)
+                    session.get(TransitSpeechletManager.SUGGESTION_QUERY_LOCATION);
+
+            if (StringUtils.isNotBlank(locationValue)) {
+                session.remove(TransitSpeechletManager.SUGGESTION_QUERY_LOCATION);
+                return transitSpeechletManager.handleNextTransitRequest(
+                        Optional.ofNullable(locationValue), Optional.ofNullable(transitType),
+                        transitUser.get(), input, intentRequest.getIntent());
+            }
+        }
+        return transitSpeechletManager.handleNextTransitInitialRequest(intentRequest.getIntent(),
+                transitUser.get(), transitType, input);
     }
 }

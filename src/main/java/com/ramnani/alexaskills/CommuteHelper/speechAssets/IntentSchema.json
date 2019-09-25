@@ -1,15 +1,11 @@
 {
 	"intents":[
 		{
-			"intent": "GetNextTransitToLocation",
+			"intent": "GetNextTransit",
 			"slots": [
 				{
 					"name": "transit",
 					"type": "TRANSIT_TYPE"
-				},
-				{
-					"name": "location",
-					"type": "Amazon.SearchQuery"
 				}
 			]
 		},

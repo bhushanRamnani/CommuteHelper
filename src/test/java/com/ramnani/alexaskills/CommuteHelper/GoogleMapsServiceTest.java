@@ -15,8 +15,9 @@
  */
 package com.ramnani.alexaskills.CommuteHelper;
 
+import com.google.maps.model.PlacesSearchResult;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by ramnanib on 12/4/16.
  */
-@Ignore
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration("/test-config.xml")
 public class GoogleMapsServiceTest {
@@ -40,9 +40,10 @@ public class GoogleMapsServiceTest {
     private GoogleMapsService service;
 
     @Test
-    public void getNextBusToWork_Sanity() {
+    public void getNextBusToWork_sanity() {
         List<TransitSuggestion> suggestions = service.getNextTransitToDestination(
-                "bus", "2400 Boyer Ave E, Seattle, WA 98112", "1918 8th Ave, Seattle, WA 98101");
+                "bus", "422 S Zarzamora St, San Antonio, TX 78207",
+                "1300 Delgado St, San Antonio, TX 78207");
         assertNotNull(suggestions);
         int leavingStartTime = suggestions.get(0).getLeavingTimeInSeconds();
         assertTrue(leavingStartTime >= 0);
@@ -50,14 +51,27 @@ public class GoogleMapsServiceTest {
     }
 
     @Test
-    public void getNextTransitToPlace_Sanity() {
-        String address = service.getAddressOfPlace("999 Belmont terr Sunnyvale California");
-        assertNotNull(address);
+    public void getNearbyAddress_sanity() {
+        PlacesSearchResult placesSearchResult = service.getNearbyPlaceAddress("the museum",
+                "Mumbai");
+
+        assertNotNull(placesSearchResult);
+        assertTrue(StringUtils.isNotBlank(placesSearchResult.formattedAddress));
+        assertTrue(StringUtils.isNotBlank(placesSearchResult.name));
+        System.out.println(placesSearchResult.formattedAddress);
+        System.out.println(placesSearchResult.name);
+    }
+
+    @Test
+    public void getAddressOfPlace_sanity() {
+        String address = service.getAddressOfPlace("5069 Bunker St NW Tracyton");
+        assertTrue(!StringUtils.isBlank(address));
+        System.out.println("getNextTransitToPlace_sanity. Address: " + address);
     }
 
     @Test
     public void getTimezoneFromAddress_sanity() {
-        String timezone = service.getTimezoneFromAddress("2400 Boyer Ave E, Seattle, WA 98112");
+        String timezone = service.getTimezoneFromAddress("5069 Bunker St NW Tracyton");
         assertNotNull(timezone);
         Assert.assertEquals("America/Los_Angeles", timezone);
     }

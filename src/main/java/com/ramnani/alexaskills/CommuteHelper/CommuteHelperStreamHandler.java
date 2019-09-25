@@ -22,7 +22,7 @@ import com.ramnani.alexaskills.CommuteHelper.Storage.TransitHelperDao;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetArrivalTimeHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetDirectionsHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetHomeAddressHandler;
-import com.ramnani.alexaskills.CommuteHelper.handler.GetNextTransitToLocationHandler;
+import com.ramnani.alexaskills.CommuteHelper.handler.GetNextTransitHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.GetTransitDurationHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.HelpIntentHandler;
 import com.ramnani.alexaskills.CommuteHelper.handler.LaunchRequestHandler;
@@ -66,14 +66,14 @@ public class CommuteHelperStreamHandler extends SkillStreamHandler {
                         new GetArrivalTimeHandler(transitSpeechletManager, userSetupSpeechletManager),
                         new GetDirectionsHandler(transitSpeechletManager),
                         new GetHomeAddressHandler(userSetupSpeechletManager),
-                        new GetNextTransitToLocationHandler(transitSpeechletManager, userSetupSpeechletManager),
+                        new GetNextTransitHandler(transitSpeechletManager, userSetupSpeechletManager),
                         new GetTransitDurationHandler(transitSpeechletManager, userSetupSpeechletManager),
                         new NextSuggestionHandler(transitSpeechletManager),
                         new PreviousSuggestionHandler(transitSpeechletManager),
                         new RepeatSuggestionHandler(transitSpeechletManager),
+                        new PutLocationNameHandler(transitSpeechletManager, userSetupSpeechletManager),
                         new PutPostalAddressHandler(userSetupSpeechletManager),
                         new UpdateHomeAddressHandler(userSetupSpeechletManager),
-                        new PutLocationNameHandler(userSetupSpeechletManager),
                         new YesOrNoRequestHandler(transitSpeechletManager, userSetupSpeechletManager))
                 .addExceptionHandler(new StandardExceptionHandler())
                 .withSkillId("amzn1.ask.skill.87670333-a7fa-45d5-afbe-0a6030917bd8")

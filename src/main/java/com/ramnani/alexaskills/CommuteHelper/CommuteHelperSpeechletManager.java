@@ -69,7 +69,7 @@ public class CommuteHelperSpeechletManager {
             String timezone = googleMaps.getTimezoneFromAddress(gMapsAddress);
             log.info("User timezone: " + timezone + ". UserId " +  userId);
 
-            userStore.upsertUser(userId, gMapsAddress, null, timezone);
+            userStore.upsertUser(userId, gMapsAddress, timezone);
 
             return ImmutablePair.of(Optional.of(gMapsAddress), Optional.empty());
 
@@ -110,6 +110,6 @@ public class CommuteHelperSpeechletManager {
         log.info("User Address obtained: " + address + ". User ID: "
                 + handlerInput.getRequestEnvelope().getSession().getUser().getUserId());
 
-        return AlexaUtils.generateAddressOutput(address);
+        return AlexaUtils.generateAddressOutput(address, false);
     }
 }

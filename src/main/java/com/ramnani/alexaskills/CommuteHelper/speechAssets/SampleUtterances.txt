@@ -1,10 +1,9 @@
-GetNextTransitToLocation when's the next {transit} to {location}
-GetNextTransitToWork when is the next {transit} to {location}
-GetNextTransitToWork when is my next {transit} to {location}
-GetNextTransitToWork next {transit} to {location}
-GetNextTransitToWork {transit} to {location}
-GetNextTransitToWork what time is my next {transit} to {location}
-GetNextTransitToWork next {transit} to {location}
+GetNextTransit when's the next {transit}
+GetNextTransit when is the next {transit}
+GetNextTransit when is my next {transit}
+GetNextTransit next {transit}
+GetNextTransit next {transit} to work
+GetNextTransit what time is my next {transit}
 
 YesIntent Yes
 YesIntent Yea

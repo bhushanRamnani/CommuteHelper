@@ -33,8 +33,8 @@ public class LaunchRequestHandler implements RequestHandler {
     public Optional<Response> handle(HandlerInput input) {
         String speechText = "Hi! I'm Transit Helper Gamma on the new SDK Version. " +
                 "I'll be glad to help you with transit information from" +
-                " home to work. For example, you can ask me, " +
-                "\"when's the next bus to work\".";
+                " home to any location. For example, you can ask me, " +
+                "\"when's the next bus\".";
         return input.getResponseBuilder()
                 .withSpeech(speechText)
                 .withSimpleCard("Transit Helper", speechText)

@@ -20,9 +20,9 @@ import com.amazon.ask.model.Intent;
 import com.amazon.ask.model.IntentRequest;
 import com.amazon.ask.model.Response;
 
-import com.amazon.ask.model.Slot;
 import com.amazon.ask.response.ResponseBuilder;
 import com.google.maps.model.Duration;
+import com.google.maps.model.PlacesSearchResult;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitHelperDao;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitUser;
 import com.ramnani.alexaskills.CommuteHelper.util.Validator;
@@ -53,9 +53,9 @@ import java.util.Random;
 public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
     private static final Logger log = Logger.getLogger(TransitSpeechletManager.class);
 
-    private static final String SLOT_TRANSIT = "transit";
+    public static final String SUGGESTION_QUERY_LOCATION = "queryLocation";
 
-    private static final String SLOT_LOCATION = "location";
+    public static final String SUGGESTION_TRANSIT_TYPE_ATTRIBUTE = "transitType";
 
     public static final String SUGGESTION_ATTRIBUTE = "suggestion";
 
@@ -64,6 +64,8 @@ public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
     private static final String INDEX_ATTRIBUTE = "index";
 
     private static final String PREVIOUS_RESPONSE_ATTRIBUTE = "previousResponse";
+
+    private static final String EXAMPLE_LOCATION = "the museum";
 
     private static final String DEFAULT_TIMEZONE = "America/Los_Angeles";
 
@@ -97,27 +99,78 @@ public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
                                " Would you like me to repeat this option?");
     }
 
-    public Optional<Response> handleNextTransitRequest(Intent intent,
-                                                       TransitUser user,
-                                                       HandlerInput handlerInput) {
+    public Optional<Response> handleNextTransitInitialRequest(Intent intent,
+                                                              TransitUser user,
+                                                              String transitType,
+                                                              HandlerInput handlerInput) {
         Validator.validateHandlerInput(handlerInput);
         Validator.validateIntent(intent);
         Validate.notNull(user);
 
-        log.info("Inside handleNextTransitRequest. Request: " + handlerInput.getRequestEnvelope()
+        log.info("Inside handleNextTransitInitialRequest. Request: " + handlerInput.getRequestEnvelope()
                 + ". Intent: " + intent);
 
-        String transitType = intent.getSlots().get(SLOT_TRANSIT).getValue();
-        String location = intent.getSlots().get(SLOT_LOCATION).getValue();
-        String homeAddress = user.getHomeAddress();
         String requestId = handlerInput.getRequest().getRequestId();
-        Map<String, Object> sessionAttributes =
-                handlerInput.getAttributesManager().getSessionAttributes();
 
         if (StringUtils.isBlank(transitType)) {
             log.info("Transit type not provided with session: " + requestId);
             String output = "Please specify your preferred mode of transport. For example, you can ask,"
                     + " When's the next bus to work?";
+
+            return handlerInput.getResponseBuilder()
+                    .withReprompt(output)
+                    .withShouldEndSession(false)
+                    .withSpeech(output)
+                    .build();
+        }
+
+        Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
+        sessionAttributes.put(SUGGESTION_TRANSIT_TYPE_ATTRIBUTE, transitType);
+
+        Map<String, String> destinations = user.getDestinations();
+        log.info("Destinations : " + destinations + ". User: " + user.getUserId());
+
+        String exampleLocation = EXAMPLE_LOCATION;
+
+        if (destinations != null && !destinations.isEmpty()) {
+            exampleLocation = destinations.keySet().stream().findFirst().get();
+        }
+        log.info("Example Location for user: " + user + ". Example Location: " + exampleLocation);
+
+        String output = "Ok. Please tell me your destination. You can give me the name of"
+                + " one of your saved locations or a well-known nearby location. For example you can say, "
+                + " the location name is " + exampleLocation + ".";
+
+        return handlerInput.getResponseBuilder()
+                .withReprompt(output)
+                .withShouldEndSession(false)
+                .withSpeech(output)
+                .build();
+    }
+
+    public Optional<Response> handleNextTransitRequest(Optional<String> locationOption,
+                                                       Optional<String> transitTypeOption,
+                                                       TransitUser user,
+                                                       HandlerInput handlerInput,
+                                                       Intent intent) {
+        Validator.validateHandlerInput(handlerInput);
+        Validator.validateIntent(intent);
+        Validate.notNull(user);
+
+        log.info("Inside handleNextTransitRequest. Request: " + handlerInput.getRequest().getRequestId());
+
+        String location = locationOption.orElse(null);
+        String homeAddress = user.getHomeAddress();
+        String requestId = handlerInput.getRequest().getRequestId();
+        Map<String, Object> sessionAttributes =
+                handlerInput.getAttributesManager().getSessionAttributes();
+
+        String transitType = transitTypeOption.orElse(null);
+
+        if (StringUtils.isBlank(transitType)) {
+            log.info("Transit type not provided with session: " + requestId);
+            String output = "Please specify your preferred mode of transport. For example, you can ask,"
+                    + " When's the next bus?";
 
             return handlerInput.getResponseBuilder()
                     .withReprompt(output)
@@ -133,22 +186,21 @@ public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
         String exampleLocation = "the museum";
 
         if (destinations != null && !destinations.isEmpty()) {
-            exampleLocation = destinations.values().stream().findFirst().get();
+            exampleLocation = destinations.keySet().stream().findFirst().get();
         }
         log.info("Example Location for user: " + user + ". Example Location: " + exampleLocation);
 
         if (StringUtils.isBlank(location)) {
             log.info("Location not provided with session: " + requestId);
-            String output = "Sorry. I did not understand the location name. Please specify the name of"
-                    + " one of the saved locations or a well-known nearby location. For example you can ask, "
-                    + " When's the next bus to " + exampleLocation + "?";
+            String output = "Sorry. I did not understand the location name. You can give me the name of"
+                    + " one of your saved locations or a well-known nearby location. For example, you can say, "
+                    + " the location name is " + exampleLocation + ".";
 
             return handlerInput.getResponseBuilder()
                     .withReprompt(output)
                     .withShouldEndSession(false)
                     .withSpeech(output)
                     .build();
-
         }
 
         if (StringUtils.isBlank(homeAddress)) {
@@ -167,11 +219,18 @@ public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
             homeAddress = deviceAddressResponse.getLeft().get();
         }
         String finalDestinationAddress = null;
+        String actualLocationName = location;
 
         if (destinations != null && destinations.containsKey(location)) {
             finalDestinationAddress = destinations.get(location);
         } else {
-            finalDestinationAddress = googleMaps.getNearbyPlaceAddress(location, homeAddress);
+            PlacesSearchResult placesSearchResult = googleMaps.getNearbyPlaceAddress(location, homeAddress);
+            finalDestinationAddress = placesSearchResult.formattedAddress;
+            log.info("User asked for location: " + location
+                    + ". GoogleMaps resolved the location name to be " + placesSearchResult.name
+                    + ". User: " + user.getUserId());
+            actualLocationName = StringUtils.isNotBlank(placesSearchResult.name)
+                    ? placesSearchResult.name : location;
         }
 
         if (StringUtils.isBlank(finalDestinationAddress)) {
@@ -185,10 +244,13 @@ public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
                     .build();
         }
         log.info("Getting transit suggestion for user: " + user + ". Destination Address: "
-                + finalDestinationAddress + ". Location: " + location);
+                + finalDestinationAddress + ". User Asked for Location: " + location);
 
         List<TransitSuggestion> suggestions = googleMaps
                         .getNextTransitToDestination(transitType, homeAddress, finalDestinationAddress);
+
+        final String suggestedLocation = actualLocationName;
+        suggestions.forEach(s -> s.setLocationName(suggestedLocation));
 
         if (suggestions == null || suggestions.size() == 0) {
             log.warn("No Suggestions for user: " + user.getUserId());
@@ -210,7 +272,7 @@ public class TransitSpeechletManager extends CommuteHelperSpeechletManager {
         sessionAttributes.put(INDEX_ATTRIBUTE, 0);
         TransitSuggestion suggestion = suggestions.get(0);
         Optional<Response> response = suggestionToDetailedResponse(suggestion, handlerInput,
-                "Your next " + transitType + " is ", intent);
+                "Your next " + transitType + " to " + actualLocationName + " is ", intent);
         return response;
     }
 

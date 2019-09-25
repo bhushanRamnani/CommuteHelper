@@ -60,7 +60,7 @@ public class GoogleMapsService {
         geoApiContext.setApiKey(apiKey);
     }
 
-    public String getNearbyPlaceAddress(String placeName, String nearbyAddress) {
+    public PlacesSearchResult getNearbyPlaceAddress(String placeName, String nearbyAddress) {
         Validate.notBlank(placeName, "placeName cannot be blank");
         Validate.notBlank(nearbyAddress, "nearbyAddress cannot be blank");
 
@@ -79,11 +79,15 @@ public class GoogleMapsService {
                     + placeName + " and nearby address: " + nearbyAddress);
             return null;
         }
-        return outputPlace.formattedAddress;
+        return outputPlace;
     }
 
     public String getAddressOfPlace(String placeName) {
         PlacesSearchResult place = getPlace(placeName, Optional.empty());
+
+        if (place == null) {
+            return null;
+        }
         return place.formattedAddress;
     }
 

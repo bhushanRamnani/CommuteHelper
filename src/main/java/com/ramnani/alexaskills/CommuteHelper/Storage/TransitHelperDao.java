@@ -85,17 +85,15 @@ public class TransitHelperDao {
      *
      * @return The TransitUser object that's inserted into the table
      */
-    public TransitUser upsertUser(String userId, String homeAddress,
-                               Map<String, String> destinations, String timeZone) {
+    public TransitUser upsertUser(String userId, String homeAddress, String timeZone) {
         Validate.notNull(userId);
         Validate.notNull(homeAddress);
-        Validate.notNull(destinations);
         Validate.notNull(timeZone);
 
         TransitUser user = new TransitUser();
         user.setUserId(userId);
         user.setHomeAddress(homeAddress);
-        user.setDestinations(destinations);
+
         user.setTimeZone(timeZone);
         mapper.save(user);
         return user;

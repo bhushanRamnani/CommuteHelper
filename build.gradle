@@ -28,7 +28,12 @@ dependencies {
             'org.springframework:spring-core:4.1.6.RELEASE',
             'org.springframework:spring-test:4.1.6.RELEASE'
     )
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testImplementation 'junit:junit:4.12'
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.5.1'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 task buildZip(type: Zip) {

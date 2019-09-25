@@ -33,7 +33,7 @@ public final class AlexaUtils {
                 .build();
     }
 
-    public static String generateAddressOutput(Address address) {
+    public static String generateAddressOutput(Address address, boolean asSpeech) {
         StringBuilder addressSpeech = new StringBuilder();
         appendToString(addressSpeech, address.getAddressLine1(), false);
         appendToString(addressSpeech, address.getAddressLine2(), false);
@@ -41,7 +41,11 @@ public final class AlexaUtils {
         appendToString(addressSpeech, address.getCity(), false);
 
         if (!StringUtils.isBlank(address.getPostalCode())) {
-            String postalCode = "<say-as interpret-as=\"cardinal\">" + address.getPostalCode() + "</say-as>";
+            String postalCode = address.getPostalCode();
+
+            if (asSpeech) {
+                postalCode = "<say-as interpret-as=\"cardinal\">" + address.getPostalCode() + "</say-as>";
+            }
             appendToString(addressSpeech, postalCode, false);
         }
         appendToString(addressSpeech, address.getCountryCode(), true);

@@ -20,20 +20,14 @@ import com.amazon.ask.model.Intent;
 import com.amazon.ask.model.Response;
 import com.amazon.ask.model.Slot;
 
-
-import com.amazon.ask.model.services.ServiceException;
-import com.amazon.ask.model.services.deviceAddress.Address;
-import com.amazon.ask.model.services.deviceAddress.DeviceAddressServiceClient;
-
-import com.amazon.ask.model.ui.AskForPermissionsConsentCard;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitHelperDao;
 import com.ramnani.alexaskills.CommuteHelper.Storage.TransitUser;
-import com.ramnani.alexaskills.CommuteHelper.util.AlexaUtils;
 import com.ramnani.alexaskills.CommuteHelper.util.Validator;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.log4j.Logger;
+import org.apache.logging.log4j.util.Strings;
 
 import java.util.Arrays;
 
@@ -88,17 +82,18 @@ public class UserSetupSpeechletManager extends CommuteHelperSpeechletManager {
             return updateHomeAddressResponse.getRight();
         }
 
-        String successSpeech = "You could either add a specific destination by address or directly ask me for"
+        String successSpeech = "You could either add a specific location by its address, or directly ask me for"
                 + " transit information if it’s a well-known location."
-                + " Would you like to add a destination by address?";
+                + " Would you like to add a destination by its address?";
 
+        handlerInput.getAttributesManager().getSessionAttributes().clear();
         handlerInput.getAttributesManager()
                 .getSessionAttributes().put(DESTINATION_ATTRIBUTE, DESTINATION_VALUE_SETUP_QUESTION_PHASE);
 
         return handlerInput.getResponseBuilder()
                 .withSpeech(successSpeech)
                 .withSimpleCard("Your home address", successSpeech)
-                .withShouldEndSession(true)
+                .withShouldEndSession(false)
                 .build();
     }
 
@@ -139,8 +134,10 @@ public class UserSetupSpeechletManager extends CommuteHelperSpeechletManager {
         }
         session.put(DESTINATION_ADDRESS_ATTRIBUTE, googleResolvedAddress);
 
+        // https://github.com/alexa/alexa-skills-kit-sdk-for-nodejs/issues/25
+        String ssmlAddress = googleResolvedAddress.replace("&", "and");
         return getNewAskResponse("Ok. I understood the address for " + locationName
-                + " to be " + googleResolvedAddress + ". Is this correct? ",
+                + " to be " + ssmlAddress + ". Is this correct? ",
                 "Location Address", handlerInput);
     }
 
@@ -156,7 +153,7 @@ public class UserSetupSpeechletManager extends CommuteHelperSpeechletManager {
 
         if (slots == null || slots.get(LOCATION_NAME_SLOT) == null) {
             log.warn("slots was null or slot did not have location name: "
-                    + handlerInput.getRequestEnvelope());
+                    + handlerInput.getRequest().getRequestId());
             return tryAgainResponse;
         }
         Slot locationSlot = slots.get(LOCATION_NAME_SLOT);
@@ -178,7 +175,7 @@ public class UserSetupSpeechletManager extends CommuteHelperSpeechletManager {
         Validator.validateIntent(intent);
         Validate.isTrue(intent.getName().equals(YES_INTENT) || intent.getName().equals(NO_INTENT));
 
-        log.info("Handling Destination setup: " + handlerInput.getRequestEnvelope());
+        log.info("Handling Destination setup: " + handlerInput.getRequest().getRequestId());
 
         Map<String, Object> sessionAttributes = handlerInput.getAttributesManager().getSessionAttributes();
         String destinationAttributeValue = (String) sessionAttributes.get(DESTINATION_ATTRIBUTE);
@@ -210,15 +207,20 @@ public class UserSetupSpeechletManager extends CommuteHelperSpeechletManager {
                         handlerInput);
             } else {
                 updateDestinationAddress(handlerInput);
+                String locationName = (String) sessionAttributes.get(DESTINATION_NAME_ATTRIBUTE);
+                sessionAttributes.clear();
+                sessionAttributes.put(TransitSpeechletManager.SUGGESTION_QUERY_LOCATION, locationName);
+                return getNewAskResponse("Ok. I have saved this location as " + locationName
+                        + ". You can now ask me for transit information to this location. For example, you can ask me, "
+                        + "when's the next bus?", "Get Transit Information", handlerInput);
             }
         } else {
             if (destinationAttributeValue.equals(DESTINATION_VALUE_SETUP_QUESTION_PHASE)) {
                 // Ask customer if they want transit information for a well known location
-                // TODO: Figure out a better example for a well-known location
-                sessionAttributes.remove(DESTINATION_ATTRIBUTE);
+                // Clear all session attributes so that customer can have a fresh start
+                sessionAttributes.put(DESTINATION_ATTRIBUTE, "\n  ");
                 return getNewAskResponse("OK. You can then ask me for transit information to a well-known" +
-                                " place close to where you live. For example, you can ask me when's the next bus" +
-                                " to the nearest train station.",
+                                " location close to where you live. For example, you can ask me when's the next bus?",
                         "Get Transit Information",
                         handlerInput);
             } else if (destinationAttributeValue.equals(DESTINATION_VALUE_SETUP_LOCATION_NAME_PHASE)) {
@@ -233,8 +235,6 @@ public class UserSetupSpeechletManager extends CommuteHelperSpeechletManager {
                         handlerInput);
             }
         }
-        throw new IllegalArgumentException("Unexpected session state for this function: "
-                + handlerInput.getRequestEnvelope());
     }
 
     private void updateDestinationAddress(HandlerInput handlerInput) {

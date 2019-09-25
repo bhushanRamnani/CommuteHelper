@@ -26,8 +26,6 @@ import java.util.Optional;
 
 public class HelpIntentHandler implements RequestHandler {
 
-    private static final Logger log = Logger.getLogger(HelpIntentHandler.class);
-
     @Override
     public boolean canHandle(HandlerInput input) {
         return input.matches(Predicates.intentName("AMAZON.HelpIntent"));
@@ -38,9 +36,9 @@ public class HelpIntentHandler implements RequestHandler {
         Validator.validateHandlerInput(input);
 
         String speechText = "In order to get transit information from your home to work," +
-                " you can ask me, \"when's the next bus to work\", or, \"when's the next transit" +
-                " to work.\". After that, I can help you with more information, like arrival time," +
-                " duration of travel, and directions.";
+                " you can ask me, \"when's the next bus\", or, \"when's the next train.\"." +
+                " After that, you can tell me the destination and I can help you with more information," +
+                " like arrival time, duration of travel, and directions.";
 
         return input.getResponseBuilder().withSpeech(speechText)
                 .withSimpleCard("Usage", speechText)
